@@ -612,6 +612,12 @@ const ACT = {
   copyLink:() => { const u = location.origin + location.pathname + '?add=1'; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('تنسخ الرابط'), () => prompt('نسخ هاد الرابط:', u)); }
 };
 
+function setPriv(on, anim) {
+  const d = document.documentElement; if (on) d.dataset.priv = '1'; else delete d.dataset.priv;
+  try { localStorage.setItem('msarifi.priv', on ? '1' : '0'); } catch (e) {}
+  const b = $('#privBtn'); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'بين الأرقام' : 'خبي الأرقام');
+  if (anim) { bounce(b); vib(10); toast(on ? 'الأرقام مخبية 🙈' : 'الأرقام باينة 👀', on ? 'x' : 'check'); }
+}
 function setTheme(t) {
   document.documentElement.dataset.theme = t; localStorage.setItem('msarifi.theme', t);
   $('#themeBtn').innerHTML = ic(t === 'light' ? 'moon' : 'sun'); $('#themeColor').content = t === 'light' ? '#f3f5fb' : '#0b0f1a';
@@ -620,7 +626,10 @@ function setTheme(t) {
 /* ---------- boot ---------- */
 function boot() {
   load();
-  $('#fab').innerHTML = ic('plus'); $('#settingsBtn').innerHTML = ic('settings');
+  $('#fab').innerHTML = ic('plus');
+  $('#privBtn').innerHTML = '<svg class="i eye-ic" viewBox="0 0 24 24" aria-hidden="true"><g class="eyeball"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle class="pupil" cx="12" cy="12" r="3"/></g><path class="slash" d="M3 3l18 18"/></svg>';
+  setPriv(document.documentElement.dataset.priv === '1');
+  $('#privBtn').onclick = () => setPriv(document.documentElement.dataset.priv !== '1', true); $('#settingsBtn').innerHTML = ic('settings');
   setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
   const h = new Date().getHours(); $('#hello').textContent = h < 12 ? 'صباح الخير 👋 فين كيمشي الصالير؟' : h < 18 ? 'مساء الخير 👋 فين كيمشي الصالير؟' : 'مساء النور 🌙 فين كيمشي الصالير؟';
   document.addEventListener('pointerdown', ripple, { passive:true });

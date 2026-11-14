@@ -218,7 +218,23 @@ nav.tabs button.on::after{content:"";position:absolute;top:2px;width:6px;height:
 .check.on{background:var(--ok);border-color:var(--ok);color:#fff;transform:rotate(-8deg)}
 .hint{font-size:12px;color:var(--muted);text-align:center;margin:6px 0 0}
 
+/* privacy mode */
+.num{transition:filter .45s var(--ease),opacity .45s var(--ease)}
+[data-priv="1"] .num{filter:blur(7px);opacity:.75;user-select:none}
+[data-priv="1"] .hero .num{filter:blur(9px)}
+.eye-ic .eyeball{transform-origin:12px 12px;transform-box:view-box;transition:transform .35s var(--spring)}
+.eye-ic .pupil{transform-origin:12px 12px;transform-box:view-box;transition:transform .3s var(--ease)}
+.eye-ic .slash{stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .35s .12s var(--ease)}
+[data-priv="1"] .eye-ic .eyeball{transform:scaleY(.12)}
+[data-priv="1"] .eye-ic .pupil{transform:scale(0)}
+[data-priv="1"] .eye-ic .slash{stroke-dashoffset:0}
+[data-priv="1"] #privBtn{color:var(--primary);border-color:rgba(124,92,255,.45)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
   body::before{animation:none}
 }
+header.top .row{gap:6px}
+header.top .icon-btn{width:40px;height:40px;border-radius:13px}
+.brand{min-width:0;flex:1}
+.brand>div:last-child{min-width:0}
+.brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
