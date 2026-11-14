@@ -9,13 +9,32 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today = () => new Date().toLocaleDateString('en-CA');
 const ym = d => d.slice(0, 7);
-const nf = new Intl.NumberFormat('fr-MA', { maximumFractionDigits: 2 });
-const fmt = n => nf.format(Math.round((+n || 0) * 100) / 100) + ' DH';
+/*i18n-skip*/
+const LANGS = ['ar', 'en', 'fr'];
+let LANG = (() => { try { const l = localStorage.getItem('msarifi.lang'); if (LANGS.includes(l)) return l; } catch (e) {}
+  const n = (navigator.languages || [navigator.language || '']).map(x => String(x).slice(0, 2).toLowerCase()).find(x => LANGS.includes(x)); return n || 'ar'; })();
+const L = o => o[LANG] ?? o.ar;
+const MISSING = new Set();
+const tr = k => { if (LANG === 'ar') return k; const v = (window.I18N || {})[k]; if (!v) { MISSING.add(k); return k; } return v[LANG === 'en' ? 0 : 1]; };
+const FR_EN = { 'Dépenses':'Expenses', 'Revenus':'Income', 'Biens en location':'Rental properties', 'Marge nette':'Net margin', 'Total':'Total', 'Mensualité':'Monthly payment', 'Code PIN':'PIN code', 'Budget':'Budget', 'Dépense':'Expense' };
+const fr = k => LANG === 'en' ? (FR_EN[k] || k) : k;
+const MONTHS_L = { ar:['يناير','فبراير','مارس','أبريل','ماي','يونيو','يوليوز','غشت','شتنبر','أكتوبر','نونبر','دجنبر'],
+  en:['January','February','March','April','May','June','July','August','September','October','November','December'],
+  fr:['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'] };
+const DAYS_L = { ar:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'], en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], fr:['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'] };
+const MON = () => MONTHS_L[LANG], DAYN = () => DAYS_L[LANG];
+const monShort = i => LANG === 'ar' ? MON()[i] : MON()[i].slice(0, LANG === 'fr' && MON()[i].length > 4 ? 4 : 3).replace(/^./, c => c.toUpperCase());
+const CATN = { cafe:['Café','Coffee','Café'], courses:['Courses','Groceries','Courses'], factures:['Factures','Bills','Factures'], sorties:['Sorties','Going out','Sorties'],
+  transport:['Transport','Transport','Transport'], sante:['Santé','Health','Santé'], credit:['Crédits','Loans','Crédits'], autre:['Autre','Other','Autre'],
+  salaire:['Salaire','Salary','Salaire'], extra:['Extra','Extra income','Revenu extra'], epargne:['Épargne','Savings','Épargne'] };
+const TAB_L = { ar:{ home:'الرئيسية', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
+const ASSET_L = { ar:{ house:'الدار / Appartement', car:'الطوموبيل', gold:'الذهب', crypto:'Crypto', other:'حاجة أخرى' }, en:{ house:'Home / Apartment', car:'Car', gold:'Gold', crypto:'Crypto', other:'Other' }, fr:{ house:'Maison / Appartement', car:'Voiture', gold:'Or', crypto:'Crypto', other:'Autre' } };
+/*i18n-end*/
+let NF; const setNF = () => { NF = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-MA', { maximumFractionDigits:2 }); }; setNF();
+const fmt = n => NF.format(Math.round((+n || 0) * 100) / 100) + ' DH';
 const money = (n, cls = '') => `<span class="num ${cls}" data-count="${+n || 0}">${fmt(n)}</span>`;
-const pct = n => nf.format(isFinite(n) ? Math.round(n * 10) / 10 : 0) + '%';
-const MONTHS = ['يناير','فبراير','مارس','أبريل','ماي','يونيو','يوليوز','غشت','شتنبر','أكتوبر','نونبر','دجنبر'];
-const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-const monthLabel = m => { const [y, mo] = m.split('-'); return `${MONTHS[+mo - 1]} ${y}`; };
+const pct = n => NF.format(isFinite(n) ? Math.round(n * 10) / 10 : 0) + '%';
+const monthLabel = m => { const [y, mo] = m.split('-'); return `${MON()[+mo - 1]} ${y}`; };
 const addMonth = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 + k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
 const vib = p => { try { if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(p); } catch (e) {} };
 
@@ -76,16 +95,16 @@ const COLORS = ['#7c5cff','#4f8bff','#00d4b4','#2fd387','#ffb547','#ff8a5c','#ff
 
 /* ---------- state ---------- */
 const DEFAULT_CATS = [
-  { id:'cafe', name:'Café', ar:'قهوة', icon:'coffee', color:'#c98b5a', kind:'exp' },
-  { id:'courses', name:'Courses', ar:'المرجان / السوبرمارشي', icon:'cart', color:'#2fd387', kind:'exp' },
-  { id:'factures', name:'Factures', ar:'الماء، الضو، الأنترنيت', icon:'bolt', color:'#ffb547', kind:'exp' },
-  { id:'sorties', name:'Sorties', ar:'الخرجات', icon:'ticket', color:'#ff5c9a', kind:'exp' },
-  { id:'transport', name:'Transport', ar:'الطاكسي، الطرام، الليصانص', icon:'car', color:'#4f8bff', kind:'exp' },
-  { id:'sante', name:'Santé', ar:'الصحة', icon:'heart', color:'#ff5c7a', kind:'exp' },
-  { id:'credit', name:'Crédits', ar:'الكريديات', icon:'bank', color:'#7c5cff', kind:'exp' },
-  { id:'autre', name:'Autre', ar:'حوايج أخرى', icon:'tag', color:'#8d97b0', kind:'exp' },
-  { id:'salaire', name:'Salaire', ar:'الصالير', icon:'wallet', color:'#2fd387', kind:'inc' },
-  { id:'extra', name:'Extra', ar:'مدخول آخر', icon:'gift', color:'#00d4b4', kind:'inc' }
+  { id:'cafe', name:'Café', icon:'coffee', color:'#c98b5a', kind:'exp' },
+  { id:'courses', name:'Courses', icon:'cart', color:'#2fd387', kind:'exp' },
+  { id:'factures', name:'Factures', icon:'bolt', color:'#ffb547', kind:'exp' },
+  { id:'sorties', name:'Sorties', icon:'ticket', color:'#ff5c9a', kind:'exp' },
+  { id:'transport', name:'Transport', icon:'car', color:'#4f8bff', kind:'exp' },
+  { id:'sante', name:'Santé', icon:'heart', color:'#ff5c7a', kind:'exp' },
+  { id:'credit', name:'Crédits', icon:'bank', color:'#7c5cff', kind:'exp' },
+  { id:'autre', name:'Autre', icon:'tag', color:'#8d97b0', kind:'exp' },
+  { id:'salaire', name:'Salaire', icon:'wallet', color:'#2fd387', kind:'inc' },
+  { id:'extra', name:'Extra', icon:'gift', color:'#00d4b4', kind:'inc' }
 ];
 const blank = () => ({ v:2, tx:[], cats:DEFAULT_CATS.map(c => ({...c})), budgets:{}, credits:[], creances:[], assets:[], rentals:[], recurring:[], goals:[], settings:{ payday:1, lastBackup:null, backupSnooze:null } });
 let S;
@@ -96,12 +115,13 @@ function load() {
   for (const k of Object.keys(b.settings)) if (!(k in S.settings)) S.settings[k] = b.settings[k];
   for (const c of DEFAULT_CATS) if (!S.cats.find(x => x.id === c.id)) S.cats.push({...c});
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('ما قدرتش نخبي الداتا', 'alert'); } }
-const cat = id => S.cats.find(c => c.id === id) || S.cats.find(c => c.id === 'autre');
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast(tr("ما قدرتش نخبي الداتا"), 'alert'); } }
+const catName = c => c.custom || !CATN[c.id] ? c.name : CATN[c.id][LANGS.indexOf(LANG)];
+const cat = id => { const c = S.cats.find(c => c.id === id) || S.cats.find(c => c.id === 'autre'); return { ...c, name:catName(c) }; };
 
 /* ---------- ui state ---------- */
 const TABS = [
-  { id:'home', label:'الرئيسية', icon:'home' },
+  { id:'home', icon:'home' },
   { id:'tx', label:'Mouvements', icon:'list' },
   { id:'gap' },
   { id:'budget', label:'Budget', icon:'pie' },
@@ -218,7 +238,7 @@ function overBudgets(m) {
 /* ---------- render ---------- */
 function renderTabs() {
   $('#tabs').innerHTML = TABS.map(t => t.id === 'gap' ? '<button class="gap" tabindex="-1" aria-hidden="true"></button>' :
-    `<button data-tab="${t.id}" class="${U.tab === t.id ? 'on' : ''}">${ic(t.icon)}<span>${t.label}</span></button>`).join('');
+    `<button data-tab="${t.id}" class="${U.tab === t.id ? 'on' : ''}">${ic(t.icon)}<span>${TAB_L[LANG][t.id]}</span></button>`).join('');
 }
 function go(tab) {
   if (tab === U.tab) { render(); return; }
@@ -233,13 +253,13 @@ function render() {
   ({ home:renderHome, tx:renderTx, budget:renderBudget, debts:renderDebts, wealth:renderWealth })[U.tab](v);
   animate(v); placeThumbs(v, true);
 }
-const monthNav = () => `<div class="month-nav"><button class="chip-btn" data-act="mPrev" aria-label="الشهر اللي فات">${ic('chevR')}</button><b>${monthLabel(U.month)}</b><button class="chip-btn" data-act="mNext" aria-label="الشهر الجاي">${ic('chevL')}</button></div>`;
+const monthNav = () => `<div class="month-nav"><button class="chip-btn" data-act="mPrev" aria-label="${tr("الشهر اللي فات")}">${ic(LANG === 'ar' ? 'chevR' : 'chevL')}</button><b>${monthLabel(U.month)}</b><button class="chip-btn" data-act="mNext" aria-label="${tr("الشهر الجاي")}">${ic(LANG === 'ar' ? 'chevL' : 'chevR')}</button></div>`;
 const catIc = (c, size = '') => `<div class="ic" style="background:${c.color};${size}">${ic(c.icon)}</div>`;
 
 function txItem(t) {
   const c = cat(t.cat), inc = t.type === 'inc';
   return `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item press" data-swipe="tx:${t.id}" data-act="editTx" data-id="${t.id}">
-  ${catIc(c)}<div class="meta"><b>${esc(t.note || c.name)}</b><small>${t.rec ? ic('repeat', 'i mini') + ' ' : ''}${esc(c.name)} · ${t.date.slice(8)} ${MONTHS[+t.date.slice(5, 7) - 1]}</small></div>
+  ${catIc(c)}<div class="meta"><b>${esc(t.note || c.name)}</b><small>${t.rec ? ic('repeat', 'i mini') + ' ' : ''}${esc(c.name)} · ${t.date.slice(8)} ${monShort(+t.date.slice(5, 7) - 1)}</small></div>
   <div class="amt ${inc ? 'pos' : ''}"><span class="num">${inc ? '+' : '−'}${fmt(t.amount)}</span></div></div></div>`;
 }
 
@@ -249,7 +269,7 @@ function donut(by, total) {
   const segs = ents.map(([id, v]) => { const len = v / total * C; const gap = ents.length > 1 ? Math.min(4, len * .3) : 0;
     const s = `<circle r="${R}" cx="70" cy="70" stroke="${cat(id).color}" stroke-dasharray="0 ${C}" data-dash="${Math.max(0.01, len - gap)} ${C}" stroke-dashoffset="${-off}"/>`; off += len; return s; }).join('');
   return `<div class="donut-wrap"><div class="donut"><svg viewBox="0 0 140 140"><circle r="${R}" cx="70" cy="70" stroke="currentColor" opacity=".08"/>${segs}</svg>
-  <div class="center"><div><small>Dépenses</small><b>${money(total)}</b></div></div></div>
+  <div class="center"><div><small>${fr('Dépenses')}</small><b>${money(total)}</b></div></div></div>
   <div class="legend">${ents.slice(0, 6).map(([id, v]) => `<div><i style="background:${cat(id).color}"></i><span>${esc(cat(id).name)}</span><b class="num">${pct(v / total * 100)}</b></div>`).join('')}</div></div>`;
 }
 
@@ -262,27 +282,27 @@ function renderHome(v) {
   const mx = Math.max(1, ...months.map(x => Math.max(x.inc, x.exp)));
   const recent = [...S.tx].sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts).slice(0, 5);
   v.innerHTML = monthNav() + `<div class="stagger">
-  <div class="card hero"><div class="lbl">الباقي ليك هاد الشهر</div><div class="big">${money(T.bal).replace('data-count', 'data-key="hbal" data-count')}</div>
+  <div class="card hero"><div class="lbl">${tr("الباقي ليك هاد الشهر")}</div><div class="big">${money(T.bal).replace('data-count', 'data-key="hbal" data-count')}</div>
     <div class="bar" style="background:rgba(255,255,255,.2);margin-top:10px"><i data-w="${spentPct}" style="background:#fff"></i></div>
-    <div class="lbl" style="margin-top:6px;font-size:12px">صرفتي <span class="num">${pct(spentPct)}</span> من المدخول</div>
-    <div class="sub"><div class="pill"><small>Revenus · دخل</small><b>${money(T.inc)}</b></div><div class="pill"><small>Dépenses · خرج</small><b>${money(T.exp)}</b></div></div></div>
-  ${over.map(o => `<div class="alert">${ic('alert')}<span>فايت الميزانية ديال ${esc(o.c.name)} بـ <span class="num">${fmt(o.spent - o.b)}</span></span></div>`).join('')}
-  ${backupBanner()}${insightsCard()}
-  <div class="card"><h2>فين مشا الصالير؟ <span class="tag">${monthLabel(m)}</span></h2>
+    <div class="lbl" style="margin-top:6px;font-size:12px">${tr("صرفتي")} <span class="num">${pct(spentPct)}</span> ${tr("من المدخول")}</div>
+    <div class="sub"><div class="pill"><small>${tr("Revenus · دخل")}</small><b>${money(T.inc)}</b></div><div class="pill"><small>${tr("Dépenses · خرج")}</small><b>${money(T.exp)}</b></div></div></div>
+  ${over.map(o => `<div class="alert">${ic('alert')}<span>${tr("فايت الميزانية ديال")} ${esc(o.c.name)} ${tr("بـ")} <span class="num">${fmt(o.spent - o.b)}</span></span></div>`).join('')}
+  ${langWelcome()}${backupBanner()}${insightsCard()}
+  <div class="card"><h2>${tr("فين مشا الصالير؟")} <span class="tag">${monthLabel(m)}</span></h2>
     ${T.exp ? donut(T.by, T.exp) + `<div class="hbars">${ents.map(([id, val]) => `<div class="hbar"><span>${esc(cat(id).name)}</span><div class="t"><i data-w="${val / maxV * 100}" style="background:${cat(id).color}"></i></div><b class="num">${fmt(val)}</b></div>`).join('')}</div>`
-      : empty('مازال ما صرفتي والو هاد الشهر', 'ضغط على + باش تزيد أول مصروف', { act:'add', label:'زيد مصروف' })}</div>
-  <div class="card"><h2>Patrimoine net · شحال عندك <span class="tag green">${ic('gem')}</span></h2>
+      : empty(tr("مازال ما صرفتي والو هاد الشهر"), tr("ضغط على + باش تزيد أول مصروف"), { act:'add', label:tr("زيد مصروف") })}</div>
+  <div class="card"><h2>${tr("Patrimoine net · شحال عندك")} <span class="tag green">${ic('gem')}</span></h2>
     <div style="font-size:28px;font-weight:800" class="${N.net >= 0 ? '' : 'neg'}">${money(N.net)}</div>
     <div class="grid2" style="margin-top:10px">
-      <div class="stat"><small>Actifs · الممتلكات</small><b class="pos">${money(N.assets)}</b></div>
-      <div class="stat"><small>Crédits · الكريديات</small><b class="neg">−${money(N.credits)}</b></div>
-      <div class="stat"><small>Créances · سالك الناس</small><b>${money(N.creances)}</b></div>
-      <div class="stat"><small>Biens en location</small><b>${S.rentals.length}</b></div>
+      <div class="stat"><small>${tr("Actifs · الممتلكات")}</small><b class="pos">${money(N.assets)}</b></div>
+      <div class="stat"><small>${tr("Crédits · الكريديات")}</small><b class="neg">−${money(N.credits)}</b></div>
+      <div class="stat"><small>${tr("Créances · سالك الناس")}</small><b>${money(N.creances)}</b></div>
+      <div class="stat"><small>${fr('Biens en location')}</small><b>${S.rentals.length}</b></div>
     </div><div class="hint">Actifs − Crédits + Créances</div></div>
-  <div class="card"><h2>آخر 6 شهور <span class="row" style="gap:10px;font-size:11px;font-weight:600"><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--ok)"></i>دخل</span><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--danger)"></i>خرج</span></span></h2>
-    <div class="cols">${months.map(x => `<div class="c"><div class="pair"><i data-h="${x.inc / mx * 100}" style="background:var(--ok)"></i><i data-h="${x.exp / mx * 100}" style="background:var(--danger)"></i></div><span>${MONTHS[+x.mm.slice(5) - 1].slice(0, 4)}</span></div>`).join('')}</div></div>
-  <div class="sec-title">آخر الحركات <button class="btn sm" data-act="goTx">شوف كلشي</button></div>
-  <div class="list stagger">${recent.length ? recent.map(txItem).join('') : empty('والو هنا', 'أول حركة غادي تبان هنا')}</div></div>`;
+  <div class="card"><h2>${tr("آخر 6 شهور")} <span class="row" style="gap:10px;font-size:11px;font-weight:600"><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--ok)"></i>${tr("دخل")}</span><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--danger)"></i>${tr("خرج")}</span></span></h2>
+    <div class="cols">${months.map(x => `<div class="c"><div class="pair"><i data-h="${x.inc / mx * 100}" style="background:var(--ok)"></i><i data-h="${x.exp / mx * 100}" style="background:var(--danger)"></i></div><span>${monShort(+x.mm.slice(5) - 1)}</span></div>`).join('')}</div></div>
+  <div class="sec-title">${tr("آخر الحركات")} <button class="btn sm" data-act="goTx">${tr("شوف كلشي")}</button></div>
+  <div class="list stagger">${recent.length ? recent.map(txItem).join('') : empty(tr("والو هنا"), tr("أول حركة غادي تبان هنا"))}</div></div>`;
 }
 
 function txMatches(t) {
@@ -298,19 +318,19 @@ function txListHtml() {
   const list = base.filter(txMatches).sort((a, b) => b.date.localeCompare(a.date) || b.ts - a.ts);
   const groups = {}; list.forEach(t => (groups[t.date] = groups[t.date] || []).push(t));
   const tot = list.reduce((s, t) => s + (t.type === 'inc' ? +t.amount : -t.amount), 0);
-  const head = (searching || U.catF) ? `<div class="day-h"><span>${list.length} حركة${searching ? ' فكاع الشهور' : ''}</span><span class="num">${fmt(tot)}</span></div>` : '';
-  if (!list.length) return head + (searching || U.catF ? empty('ما لقيت والو', 'جرب كلمة أخرى ولا بدل الفئة') : empty('حتى حركة هاد الشهر', 'سجل المصاريف ديالك وشوف فين كيمشيو الفلوس', { act:'add', label:'زيد حركة' }));
+  const head = (searching || U.catF) ? `<div class="day-h"><span>${list.length} ${tr("حركة")}${searching ? (' ' + tr("فكاع الشهور")) : ''}</span><span class="num">${fmt(tot)}</span></div>` : '';
+  if (!list.length) return head + (searching || U.catF ? empty(tr("ما لقيت والو"), tr("جرب كلمة أخرى ولا بدل الفئة")) : empty(tr("حتى حركة هاد الشهر"), tr("سجل المصاريف ديالك وشوف فين كيمشيو الفلوس"), { act:'add', label:tr("زيد حركة") }));
   return head + Object.entries(groups).map(([d, ts]) => { const dt = new Date(d + 'T12:00');
     const day = ts.reduce((s, t) => s + (t.type === 'inc' ? +t.amount : -t.amount), 0);
-    return `<div class="day-h"><span>${DAYS[dt.getDay()]} ${dt.getDate()} ${MONTHS[dt.getMonth()]}${searching ? ' ' + dt.getFullYear() : ''}</span><span class="num">${fmt(day)}</span></div><div class="list stagger">${ts.map(txItem).join('')}</div>`; }).join('')
-   + '<div class="hint">سحب الحركة لجيهة باش تمسحها · ضغط عليها باش تبدلها</div>';
+    return `<div class="day-h"><span>${dayLabel(d)}${searching ? ' ' + dt.getFullYear() : ''}</span><span class="num">${fmt(day)}</span></div><div class="list stagger">${ts.map(txItem).join('')}</div>`; }).join('')
+   + ('<div class="hint">' + tr("سحب الحركة لجيهة باش تمسحها") + ' · ' + tr("ضغط عليها باش تبدلها") + '</div>');
 }
 function renderTx(v) {
   const T = monthTotals(U.month);
-  v.innerHTML = monthNav() + `<div class="searchbar">${ic('search')}<input id="txSearch" class="input" type="search" placeholder="قلب: المرجان، قهوة، 150…" value="${esc(U.q)}" aria-label="قلب"></div>
-  <div class="chips" id="catChips"><button class="chip ${U.catF ? '' : 'on'}" data-catf="">كلشي</button>${S.cats.filter(c => S.tx.some(t => t.cat === c.id)).map(c => `<button class="chip ${U.catF === c.id ? 'on' : ''}" data-catf="${c.id}"><i style="background:${c.color}"></i>${esc(c.name)}</button>`).join('')}</div>` +
-  seg('txFilter', [['all', 'كلشي'], ['exp', 'Dépenses'], ['inc', 'Revenus']]) +
-  `<div class="grid2 stagger" style="margin-bottom:6px"><div class="card stat"><small>Dépenses · ${monthLabel(U.month)}</small><b class="neg">${money(T.exp)}</b></div><div class="card stat"><small>Revenus</small><b class="pos">${money(T.inc)}</b></div></div><div id="txList">${txListHtml()}</div>`;
+  v.innerHTML = monthNav() + `<div class="searchbar">${ic('search')}<input id="txSearch" class="input" type="search" placeholder="${tr("قلب: المرجان، قهوة، 150…")}" value="${esc(U.q)}" aria-label="${tr("قلب")}"></div>
+  <div class="chips" id="catChips"><button class="chip ${U.catF ? '' : 'on'}" data-catf="">${tr("كلشي")}</button>${S.cats.filter(c => S.tx.some(t => t.cat === c.id)).map(c => cat(c.id)).map(c => `<button class="chip ${U.catF === c.id ? 'on' : ''}" data-catf="${c.id}"><i style="background:${c.color}"></i>${esc(c.name)}</button>`).join('')}</div>` +
+  seg('txFilter', [['all', tr("كلشي")], ['exp', fr('Dépenses')], ['inc', fr('Revenus')]]) +
+  `<div class="grid2 stagger" style="margin-bottom:6px"><div class="card stat"><small>${fr('Dépenses')} · ${monthLabel(U.month)}</small><b class="neg">${money(T.exp)}</b></div><div class="card stat"><small>${fr('Revenus')}</small><b class="pos">${money(T.inc)}</b></div></div><div id="txList">${txListHtml()}</div>`;
   const si = $('#txSearch', v);
   si.oninput = () => { U.q = si.value; const l = $('#txList', v); l.innerHTML = txListHtml(); stagger(l); bindSwipes(l); };
   $('#catChips', v).onclick = e => { const b = e.target.closest('[data-catf]'); if (!b) return; U.catF = b.dataset.catf; vib(6);
@@ -328,19 +348,19 @@ function placeThumbs(root, instant) {
 }
 
 function renderBudget(v) {
-  const T = monthTotals(U.month), cats = S.cats.filter(c => c.kind === 'exp');
+  const T = monthTotals(U.month), cats = S.cats.filter(c => c.kind === 'exp').map(c => cat(c.id));
   const totB = cats.reduce((s, c) => s + (+S.budgets[c.id] || 0), 0);
   const totS = cats.filter(c => +S.budgets[c.id] > 0).reduce((s, c) => s + (T.by[c.id] || 0), 0);
   const p = totB ? totS / totB * 100 : 0;
   v.innerHTML = monthNav() + `<div class="stagger">
-  <div class="card"><h2>Budget du mois · الميزانية <span class="badge ${p > 100 ? 'over' : p > 80 ? 'warn' : 'ok'}">${pct(p)}</span></h2>
-   <div class="row between"><div class="stat"><small>صرفتي</small><b>${money(totS)}</b></div><div class="stat" style="text-align:left"><small>الميزانية</small><b>${money(totB)}</b></div></div>
+  <div class="card"><h2>${tr("Budget du mois · الميزانية")} <span class="badge ${p > 100 ? 'over' : p > 80 ? 'warn' : 'ok'}">${pct(p)}</span></h2>
+   <div class="row between"><div class="stat"><small>${tr("صرفتي")}</small><b>${money(totS)}</b></div><div class="stat" style="text-align:end"><small>${tr("الميزانية")}</small><b>${money(totB)}</b></div></div>
    <div class="bar ${p > 100 ? 'over' : p > 80 ? 'warn' : ''}" style="margin-top:10px"><i data-w="${Math.min(100, p)}"></i></div>
-   ${totB ? `<div class="hint">${totB - totS >= 0 ? `باقي ليك <span class="num">${fmt(totB - totS)}</span> تصرفهم هاد الشهر` : `فايت الميزانية بـ <span class="num">${fmt(totS - totB)}</span>`}</div>` : '<div class="hint">ضغط على شي فئة باش تحدد ليها الميزانية</div>'}</div>
+   ${totB ? `<div class="hint">${totB - totS >= 0 ? `${tr("باقي ليك")} <span class="num">${fmt(totB - totS)}</span> ${tr("تصرفهم هاد الشهر")}` : `${tr("فايت الميزانية بـ")} <span class="num">${fmt(totS - totB)}</span>`}</div>` : ('<div class="hint">' + tr("ضغط على شي فئة باش تحدد ليها الميزانية") + '</div>')}</div>
   <div class="card">${cats.map(c => { const b = +S.budgets[c.id] || 0, s = T.by[c.id] || 0, q = b ? s / b * 100 : 0;
     const st = !b ? '' : q > 100 ? 'over' : q > 80 ? 'warn' : 'ok';
     return `<div class="budget-row press" data-act="setBudget" data-id="${c.id}" style="cursor:pointer"><div class="row">${catIc(c, 'width:36px;height:36px;border-radius:12px')}
-      <div style="flex:1"><div class="row between"><b style="font-size:14px">${esc(c.name)}</b>${b ? `<span class="badge ${st}">${q > 100 ? 'فايت!' : pct(q)}</span>` : `<span class="tag">${ic('plus', 'i')} حدد</span>`}</div>
+      <div style="flex:1"><div class="row between"><b style="font-size:14px">${esc(c.name)}</b>${b ? `<span class="badge ${st}">${q > 100 ? tr("فايت!") : pct(q)}</span>` : `<span class="tag">${ic('plus', 'i')} ${tr("حدد")}</span>`}</div>
       <small class="muted"><span class="num">${fmt(s)}${b ? ' / ' + fmt(b) : ''}</span></small></div></div>
       ${b ? `<div class="bar ${st}" style="margin-top:8px"><i data-w="${Math.min(100, q)}"></i></div>` : ''}</div>`; }).join('')}</div></div>`;
 }
@@ -349,65 +369,66 @@ function renderDebts(v) {
   let body;
   if (U.debtSeg === 'credits') {
     const rem = S.credits.reduce((s, c) => s + (+c.remaining || 0), 0), mon = S.credits.filter(c => +c.remaining > 0).reduce((s, c) => s + (+c.monthly || 0), 0);
-    body = `<div class="grid2 stagger"><div class="card stat"><small>الباقي فالكريديات</small><b class="neg">${money(rem)}</b></div><div class="card stat"><small>كتخلص فالشهر</small><b>${money(mon)}</b></div></div>
+    body = `<div class="grid2 stagger"><div class="card stat"><small>${tr("الباقي فالكريديات")}</small><b class="neg">${money(rem)}</b></div><div class="card stat"><small>${tr("كتخلص فالشهر")}</small><b>${money(mon)}</b></div></div>
     <div class="stagger">${S.credits.length ? S.credits.map(c => { const paid = c.total ? (c.total - c.remaining) / c.total * 100 : 0, left = +c.monthly ? Math.ceil(c.remaining / c.monthly) : 0;
       return `<div class="card"><div class="row between"><div class="row">${catIc({ color:'#7c5cff', icon:'bank' })}<div><b>${esc(c.name)}</b><div class="muted" style="font-size:12px">${esc(c.bank || 'Crédit')}</div></div></div>
-        <button class="icon-btn press" data-act="editCredit" data-id="${c.id}" aria-label="بدل">${ic('edit')}</button></div>
+        <button class="icon-btn press" data-act="editCredit" data-id="${c.id}" aria-label="${tr("بدل")}">${ic('edit')}</button></div>
         <div class="bar" style="margin:12px 0 6px"><i data-w="${Math.max(0, Math.min(100, paid))}"></i></div>
-        <div class="kv"><span>خلصتي</span><b class="num">${pct(paid)}</b></div>
+        <div class="kv"><span>${tr("خلصتي")}</span><b class="num">${pct(paid)}</b></div>
         <div class="kv"><span>Total</span><b>${money(c.total)}</b></div><div class="kv"><span>Mensualité</span><b>${money(c.monthly)}</b></div>
-        <div class="kv"><span>Reste · الباقي</span><b class="neg">${money(c.remaining)}</b></div><div class="kv"><span>شحال باقي من شهر</span><b class="num">${left}</b></div>
-        ${+c.remaining > 0 ? `<button class="btn primary block" style="margin-top:8px" data-act="payCredit" data-id="${c.id}">${ic('check')} خلصت هاد الشهر</button>` : '<div class="tag green" style="margin-top:8px">🎉 تخلص كامل</div>'}</div>`; }).join('')
-      : empty('ما عندك حتى كريدي', 'إلا عندك كريدي، زيدو هنا وتبع شحال باقي', { act:'addCredit', label:'زيد كريدي' })}</div>
-    ${S.credits.length ? `<button class="btn block" data-act="addCredit">${ic('plus')} زيد كريدي</button>` : ''}`;
+        <div class="kv"><span>${tr("Reste · الباقي")}</span><b class="neg">${money(c.remaining)}</b></div><div class="kv"><span>${tr("شحال باقي من شهر")}</span><b class="num">${left}</b></div>
+        ${+c.remaining > 0 ? `<button class="btn primary block" style="margin-top:8px" data-act="payCredit" data-id="${c.id}">${ic('check')} ${tr("خلصت هاد الشهر")}</button>` : ('<div class="tag green" style="margin-top:8px">🎉 ' + tr("تخلص كامل") + '</div>')}</div>`; }).join('')
+      : empty(tr("ما عندك حتى كريدي"), tr("إلا عندك كريدي، زيدو هنا وتبع شحال باقي"), { act:'addCredit', label:tr("زيد كريدي") })}</div>
+    ${S.credits.length ? `<button class="btn block" data-act="addCredit">${ic('plus')} ${tr("زيد كريدي")}</button>` : ''}`;
   } else {
     const open = S.creances.filter(c => !c.paid), done = S.creances.filter(c => c.paid);
     const tot = open.reduce((s, c) => s + +c.amount, 0);
     const it = c => `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item ${c.paid ? 'paid' : ''}" data-swipe="creance:${c.id}">
       <div class="ic" style="background:#00d4b4">${ic('users')}</div><div class="meta press" data-act="editCreance" data-id="${c.id}"><b>${esc(c.person)}</b><small>${esc(c.note || '')} ${c.date ? '· ' + c.date : ''}</small></div>
-      <div class="amt"><span class="num">${fmt(c.amount)}</span></div><button class="check ${c.paid ? 'on' : ''}" data-act="togglePaid" data-id="${c.id}" aria-label="خلصني">${ic('check')}</button></div></div>`;
-    body = `<div class="card hero stagger"><div class="lbl">الناس سالينك</div><div class="big">${money(tot)}</div><div class="lbl">${open.length} ديال الناس مازال ما خلصوش</div></div>
-    ${S.creances.length ? `<div class="list stagger">${open.map(it).join('')}</div>${done.length ? `<div class="sec-title">خلصوني ✓</div><div class="list stagger">${done.map(it).join('')}</div>` : ''}<div class="hint">ضغط على ✓ ملي يخلصك</div>`
-      : empty('حتى واحد ما سالك', 'سجل الفلوس اللي سلفتي باش ما تنساهمش', { act:'addCreance', label:'زيد واحد سالك' })}
-    ${S.creances.length ? `<button class="btn block" style="margin-top:12px" data-act="addCreance">${ic('plus')} زيد واحد سالك</button>` : ''}`;
+      <div class="amt"><span class="num">${fmt(c.amount)}</span></div><button class="check ${c.paid ? 'on' : ''}" data-act="togglePaid" data-id="${c.id}" aria-label="${tr("خلصني")}">${ic('check')}</button></div></div>`;
+    body = `<div class="card hero stagger"><div class="lbl">${tr("الناس سالينك")}</div><div class="big">${money(tot)}</div><div class="lbl">${open.length} ${tr("ديال الناس مازال ما خلصوش")}</div></div>
+    ${S.creances.length ? `<div class="list stagger">${open.map(it).join('')}</div>${done.length ? `<div class="sec-title">${tr("خلصوني")} ✓</div><div class="list stagger">${done.map(it).join('')}</div>` : ''}<div class="hint">${tr("ضغط على")} ✓ ${tr("ملي يخلصك")}</div>`
+      : empty(tr("حتى واحد ما سالك"), tr("سجل الفلوس اللي سلفتي باش ما تنساهمش"), { act:'addCreance', label:tr("زيد واحد سالك") })}
+    ${S.creances.length ? `<button class="btn block" style="margin-top:12px" data-act="addCreance">${ic('plus')} ${tr("زيد واحد سالك")}</button>` : ''}`;
   }
-  v.innerHTML = seg('debtSeg', [['credits', 'Crédits · الكريديات'], ['creances', 'Créances · سالك']]) + body;
+  v.innerHTML = seg('debtSeg', [['credits', tr("Crédits · الكريديات")], ['creances', tr("Créances · سالك")]]) + body;
 }
 
-const ASSET_T = { house:['الدار / Appartement', 'home', '#4f8bff'], car:['الطوموبيل', 'car', '#ff8a5c'], gold:['الذهب', 'gold', '#ffb547'], crypto:['Crypto', 'crypto', '#7c5cff'], other:['حاجة أخرى', 'box', '#8d97b0'] };
+const ASSET_B = { house:['home', '#4f8bff'], car:['car', '#ff8a5c'], gold:['gold', '#ffb547'], crypto:['crypto', '#7c5cff'], other:['box', '#8d97b0'] };
+const ASSET_T = new Proxy({}, { get:(o, k) => ASSET_B[k] ? [ASSET_L[LANG][k], ...ASSET_B[k]] : undefined, ownKeys:() => Reflect.ownKeys(ASSET_B), getOwnPropertyDescriptor:(o, k) => ({ enumerable:true, configurable:true }) });
 function renderWealth(v) {
   let body;
   if (U.wealthSeg === 'goals') body = goalsHtml();
   else if (U.wealthSeg === 'assets') {
     const cur = S.assets.reduce((s, a) => s + +a.current, 0), buy = S.assets.reduce((s, a) => s + +a.buy, 0), g = cur - buy;
-    body = `<div class="card hero stagger"><div class="lbl">Actifs · القيمة دابا</div><div class="big">${money(cur)}</div>
-      <div class="sub"><div class="pill"><small>شريتهم بـ</small><b>${money(buy)}</b></div><div class="pill"><small>${g >= 0 ? 'ربحتي' : 'خسرتي'}</small><b><span class="num">${g >= 0 ? '+' : '−'}</span>${money(Math.abs(g))} <span class="num" style="font-size:12px">(${pct(buy ? g / buy * 100 : 0)})</span></b></div></div></div>
+    body = `<div class="card hero stagger"><div class="lbl">${tr("Actifs · القيمة دابا")}</div><div class="big">${money(cur)}</div>
+      <div class="sub"><div class="pill"><small>${tr("شريتهم بـ")}</small><b>${money(buy)}</b></div><div class="pill"><small>${g >= 0 ? tr("ربحتي") : tr("خسرتي")}</small><b><span class="num">${g >= 0 ? '+' : '−'}</span>${money(Math.abs(g))} <span class="num" style="font-size:12px">(${pct(buy ? g / buy * 100 : 0)})</span></b></div></div></div>
     <div class="list stagger">${S.assets.length ? S.assets.map(a => { const t = ASSET_T[a.type] || ASSET_T.other, d = a.current - a.buy, dp = a.buy ? d / a.buy * 100 : 0;
       return `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item press" data-swipe="asset:${a.id}" data-act="editAsset" data-id="${a.id}">${catIc({ color:t[2], icon:t[1] })}
-      <div class="meta"><b>${esc(a.name || t[0])}</b><small>${t[0]} · شريتها بـ <span class="num">${fmt(a.buy)}</span></small></div>
-      <div class="amt" style="text-align:left"><span class="num">${fmt(a.current)}</span><br><small class="${d >= 0 ? 'pos' : 'neg'} num" style="font-size:12px">${d >= 0 ? '▲ +' : '▼ −'}${fmt(Math.abs(d))} (${pct(dp)})</small></div></div></div>`; }).join('')
-      : empty('مازال ما زدتي حتى حاجة', 'الدار، الطوموبيل، الذهب، الكريبتو… شوف شحال ربحتي فيهم', { act:'addAsset', label:'زيد حاجة' })}</div>
-    ${S.assets.length ? `<button class="btn block" style="margin-top:12px" data-act="addAsset">${ic('plus')} زيد حاجة</button>` : ''}`;
+      <div class="meta"><b>${esc(a.name || t[0])}</b><small>${t[0]} · ${tr("شريتها بـ")} <span class="num">${fmt(a.buy)}</span></small></div>
+      <div class="amt" style="text-align:end"><span class="num">${fmt(a.current)}</span><br><small class="${d >= 0 ? 'pos' : 'neg'} num" style="font-size:12px">${d >= 0 ? '▲ +' : '▼ −'}${fmt(Math.abs(d))} (${pct(dp)})</small></div></div></div>`; }).join('')
+      : empty(tr("مازال ما زدتي حتى حاجة"), tr("الدار، الطوموبيل، الذهب، الكريبتو… شوف شحال ربحتي فيهم"), { act:'addAsset', label:tr("زيد حاجة") })}</div>
+    ${S.assets.length ? `<button class="btn block" style="margin-top:12px" data-act="addAsset">${ic('plus')} ${tr("زيد حاجة")}</button>` : ''}`;
   } else {
     body = `<div class="stagger">${S.rentals.length ? S.rentals.map(r => { const st = rentalStats(r);
       const ent = [...(r.entries || [])].sort((a, b) => b.date.localeCompare(a.date));
-      return `<div class="card"><div class="row between"><div class="row">${catIc({ color:r.kind === 'airbnb' ? '#ff5c9a' : '#4f8bff', icon:'building' })}<div><b>${esc(r.name)}</b><div><span class="tag">${r.kind === 'airbnb' ? 'Airbnb · كرا بالليلة' : 'كرا عادي · Location longue'}</span></div></div></div>
-        <button class="icon-btn press" data-act="editRental" data-id="${r.id}" aria-label="بدل">${ic('edit')}</button></div>
+      return `<div class="card"><div class="row between"><div class="row">${catIc({ color:r.kind === 'airbnb' ? '#ff5c9a' : '#4f8bff', icon:'building' })}<div><b>${esc(r.name)}</b><div><span class="tag">${r.kind === 'airbnb' ? tr("Airbnb · كرا بالليلة") : (LANG === 'ar' ? tr("كرا عادي") + ' · Location longue' : tr("كرا عادي"))}</span></div></div></div>
+        <button class="icon-btn press" data-act="editRental" data-id="${r.id}" aria-label="${tr("بدل")}">${ic('edit')}</button></div>
         <div class="grid2" style="margin-top:12px">
-         <div class="stat"><small>Revenus · دخل</small><b class="pos">${money(st.inc)}</b></div><div class="stat"><small>Charges · مصاريف</small><b class="neg">${money(st.exp)}</b></div>
-         <div class="stat"><small>Net · الصافي</small><b class="${st.net >= 0 ? 'pos' : 'neg'}">${money(st.net)}</b></div><div class="stat"><small>Marge nette</small><b class="num">${pct(st.margin)}</b></div>
-         <div class="stat"><small>Rendement / عام</small><b class="num ${st.yieldPct >= 0 ? 'pos' : 'neg'}">${pct(st.yieldPct)}</b></div><div class="stat"><small>Rénovation · الإصلاح</small><b>${money(st.reno)}</b></div>
+         <div class="stat"><small>${tr("Revenus · دخل")}</small><b class="pos">${money(st.inc)}</b></div><div class="stat"><small>${tr("Charges · مصاريف")}</small><b class="neg">${money(st.exp)}</b></div>
+         <div class="stat"><small>${tr("Net · الصافي")}</small><b class="${st.net >= 0 ? 'pos' : 'neg'}">${money(st.net)}</b></div><div class="stat"><small>${fr('Marge nette')}</small><b class="num">${pct(st.margin)}</b></div>
+         <div class="stat"><small>${L({ ar:'Rendement / عام', en:'Yield / year', fr:'Rendement / an' })}</small><b class="num ${st.yieldPct >= 0 ? 'pos' : 'neg'}">${pct(st.yieldPct)}</b></div><div class="stat"><small>${tr("Rénovation · الإصلاح")}</small><b>${money(st.reno)}</b></div>
         </div>
-        <div class="kv" style="margin-top:8px"><span>الاستثمار (الثمن + الإصلاح)</span><b>${money(st.invest)}</b></div>
-        <div class="kv"><span>رجعو ليك من الإصلاح</span><b class="num">${pct(st.reno ? Math.max(0, st.net) / st.reno * 100 : 0)}</b></div>
+        <div class="kv" style="margin-top:8px"><span>${tr("الاستثمار (الثمن + الإصلاح)")}</span><b>${money(st.invest)}</b></div>
+        <div class="kv"><span>${tr("رجعو ليك من الإصلاح")}</span><b class="num">${pct(st.reno ? Math.max(0, st.net) / st.reno * 100 : 0)}</b></div>
         <div class="bar" style="margin:4px 0 10px"><i data-w="${st.reno ? Math.min(100, Math.max(0, st.net) / st.reno * 100) : 0}"></i></div>
-        <div class="row" style="gap:6px"><button class="btn sm primary" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="inc">${ic('up')} دخل</button>
-        <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="exp">${ic('down')} مصروف</button>
-        <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="reno">${ic('wrench')} إصلاح</button></div>
-        ${ent.length ? `<details style="margin-top:10px"><summary class="muted" style="cursor:pointer;font-size:13px">الحركات (${ent.length})</summary><div class="list" style="margin-top:8px">${ent.map(e => `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item" data-swipe="rent:${r.id}:${e.id}" style="padding:9px">
-          <div class="meta"><b>${esc(e.note || ({ inc:'دخل', exp:'مصروف', reno:'إصلاح' })[e.type])}</b><small>${({ inc:'Revenu', exp:'Charge', reno:'Rénovation' })[e.type]} · ${e.date}</small></div><div class="amt ${e.type === 'inc' ? 'pos' : 'neg'}"><span class="num">${e.type === 'inc' ? '+' : '−'}${fmt(e.amount)}</span></div></div></div>`).join('')}</div></details>` : ''}
-      </div>`; }).join('') : empty('ما عندك حتى ملك كتكريه', 'زيد شقة ديال Airbnb ولا كرا عادي وحسب الربح الصافي', { act:'addRental', label:'زيد ملك' })}</div>
-    ${S.rentals.length ? `<button class="btn block" data-act="addRental">${ic('plus')} زيد ملك</button>` : ''}`;
+        <div class="row" style="gap:6px"><button class="btn sm primary" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="inc">${ic('up')} ${tr("دخل")}</button>
+        <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="exp">${ic('down')} ${tr("مصروف")}</button>
+        <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="reno">${ic('wrench')} ${tr("إصلاح")}</button></div>
+        ${ent.length ? `<details style="margin-top:10px"><summary class="muted" style="cursor:pointer;font-size:13px">${tr("الحركات (")}${ent.length})</summary><div class="list" style="margin-top:8px">${ent.map(e => `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item" data-swipe="rent:${r.id}:${e.id}" style="padding:9px">
+          <div class="meta"><b>${esc(e.note || ({ inc:tr("دخل"), exp:tr("مصروف"), reno:tr("إصلاح") })[e.type])}</b><small>${({ inc:'Revenu', exp:'Charge', reno:'Rénovation' })[e.type]} · ${e.date}</small></div><div class="amt ${e.type === 'inc' ? 'pos' : 'neg'}"><span class="num">${e.type === 'inc' ? '+' : '−'}${fmt(e.amount)}</span></div></div></div>`).join('')}</div></details>` : ''}
+      </div>`; }).join('') : empty(tr("ما عندك حتى ملك كتكريه"), tr("زيد شقة ديال Airbnb ولا كرا عادي وحسب الربح الصافي"), { act:'addRental', label:tr("زيد ملك") })}</div>
+    ${S.rentals.length ? `<button class="btn block" data-act="addRental">${ic('plus')} ${tr("زيد ملك")}</button>` : ''}`;
   }
   v.innerHTML = seg('wealthSeg', [['assets', 'Actifs'], ['rentals', 'Location'], ['goals', 'Objectifs']]) + body;
 }
@@ -436,7 +457,7 @@ function removeBySwipe(key) {
   if (k === 'asset') S.assets = S.assets.filter(t => t.id !== id);
   if (k === 'rent') { const r = S.rentals.find(x => x.id === id); if (r) r.entries = r.entries.filter(e => e.id !== sub); }
   save(); render();
-  toast('تمسحات', 'trash', { label:'رجعها', fn:() => { S = JSON.parse(snap); save(); render(); } });
+  toast(tr("تمسحات"), 'trash', { label:tr("رجعها"), fn:() => { S = JSON.parse(snap); save(); render(); } });
 }
 
 /* ---------- sheet ---------- */
@@ -455,7 +476,7 @@ function sheetDrag() {
 }
 const field = (label, inner) => `<div class="field"><label>${label}</label>${inner}</div>`;
 const inp = (name, val = '', type = 'text', extra = '') => `<input class="input" name="${name}" type="${type}" value="${esc(val)}" ${type === 'number' ? 'inputmode="decimal" step="any" min="0"' : ''} ${extra}>`;
-const head = (t, delAct, id) => `<h3>${t}<span class="row">${delAct ? `<button class="icon-btn press" data-act="${delAct}" data-id="${id}" aria-label="مسح" style="color:var(--danger)">${ic('trash')}</button>` : ''}<button class="icon-btn press" data-act="close" aria-label="سد">${ic('x')}</button></span></h3>`;
+const head = (t, delAct, id) => `<h3>${t}<span class="row">${delAct ? `<button class="icon-btn press" data-act="${delAct}" data-id="${id}" aria-label="${tr("مسح")}" style="color:var(--danger)">${ic('trash')}</button>` : ''}<button class="icon-btn press" data-act="close" aria-label="${tr("سد")}">${ic('x')}</button></span></h3>`;
 const formVals = f => Object.fromEntries(new FormData(f).entries());
 const num = v => { const n = parseFloat(String(v).replace(',', '.').replace(/\s/g, '')); return isFinite(n) ? n : 0; };
 function invalid(el) { el.animate && !RM.matches && el.animate([{ transform:'translateX(0)' }, { transform:'translateX(-8px)' }, { transform:'translateX(8px)' }, { transform:'translateX(0)' }], { duration:300 }); el.focus(); vib([30, 30, 30]); }
@@ -469,21 +490,21 @@ function presets(type) {
 function txSheet(t, pre = {}) {
   const ed = !!t; t = t || { type:pre.type || 'exp', amount:pre.amount || '', cat:pre.cat || '', note:pre.note || '', date:today() };
   let type = t.type, sel = t.cat, manualCat = !!t.cat;
-  const cats = () => S.cats.filter(c => c.kind === type);
-  const catsHtml = () => cats().map(c => `<button type="button" class="cat ${c.id === sel ? 'on' : ''}" data-cat="${c.id}">${catIc(c)}<span>${esc(c.name)}</span></button>`).join('') + `<button type="button" class="cat" data-newcat="1"><div class="ic" style="background:var(--card);color:var(--text);border:1.5px dashed var(--muted)">${ic('plus')}</div><span>جديدة</span></button>`;
+  const cats = () => S.cats.filter(c => c.kind === type).map(c => cat(c.id));
+  const catsHtml = () => cats().map(c => `<button type="button" class="cat ${c.id === sel ? 'on' : ''}" data-cat="${c.id}">${catIc(c)}<span>${esc(c.name)}</span></button>`).join('') + `<button type="button" class="cat" data-newcat="1"><div class="ic" style="background:var(--card);color:var(--text);border:1.5px dashed var(--muted)">${ic('plus')}</div><span>${tr("جديدة")}</span></button>`;
   const presHtml = () => { const p = presets(type); return p.length ? p.map((x, i) => `<button type="button" class="chip preset" data-pi="${i}"><i style="background:${cat(x.cat).color}"></i>${esc(x.note || cat(x.cat).name)} · <span class="num">${fmt(x.amount)}</span></button>`).join('') : ''; };
   const rule = t.rec && S.recurring.find(r => r.id === t.rec);
-  openSheet(head(ed ? 'بدل الحركة' : 'زيد حركة', ed && 'delTx', t.id) + `<form id="txForm" autocomplete="off">
-    <div class="type-toggle"><button type="button" class="exp ${type === 'exp' ? 'on' : ''}" data-type="exp">${ic('down')} Dépense · خرج</button><button type="button" class="inc ${type === 'inc' ? 'on' : ''}" data-type="inc">${ic('up')} Revenu · دخل</button></div>
+  openSheet(head(ed ? tr("بدل الحركة") : tr("زيد حركة"), ed && 'delTx', t.id) + `<form id="txForm" autocomplete="off">
+    <div class="type-toggle"><button type="button" class="exp ${type === 'exp' ? 'on' : ''}" data-type="exp">${ic('down')} ${tr("Dépense · خرج")}</button><button type="button" class="inc ${type === 'inc' ? 'on' : ''}" data-type="inc">${ic('up')} ${tr("Revenu · دخل")}</button></div>
     ${ed ? '' : `<div class="chips presets" id="presets">${presHtml()}</div>`}
-    <div class="amount-box"><input class="input amount-in" name="amount" type="text" inputmode="decimal" placeholder="0" value="${esc(t.amount)}" aria-label="المبلغ"><div class="cur">DH · درهم</div></div>
+    <div class="amount-box"><input class="input amount-in" name="amount" type="text" inputmode="decimal" placeholder="0" value="${esc(t.amount)}" aria-label="${tr("المبلغ")}"><div class="cur">${tr("DH · درهم")}</div></div>
     <div class="cats" id="catGrid">${catsHtml()}</div>
-    ${field('Note · ملاحظة', inp('note', t.note, 'text', 'placeholder="مثلا: المرجان، قهوة مع صحابي…" maxlength="80" list="noteList"'))}
+    ${field(tr("Note · ملاحظة"), inp('note', t.note, 'text', ('placeholder="' + tr("مثلا: المرجان، قهوة مع صحابي…") + '" maxlength="80" list="noteList"')))}
     <datalist id="noteList">${[...new Set(S.tx.map(x => (x.note || '').trim()).filter(Boolean))].slice(-40).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
-    ${field('التاريخ', inp('date', t.date, 'date'))}
-    ${ed ? (rule ? `<div class="hint" style="margin:-4px 0 12px">${ic('repeat', 'i mini')} هادي حركة كتعاود كل شهر (نهار ${rule.day}). التبديل هنا كيمس غير هاد الشهر · <a href="#" data-act="editRec" data-id="${rule.id}">بدل القاعدة</a></div>` : '')
-      : `<label class="switch-row"><input type="checkbox" name="repeat" ${pre.repeat ? 'checked' : ''}><span class="sw"></span><span>${ic('repeat', 'i mini')} كتعاود كل شهر <small class="muted">(الصالير، الكرا، الأنترنيت…)</small></span></label>`}
-    <button class="btn primary block" type="submit" style="padding:16px;font-size:16px">${ic('check')} ${ed ? 'سجل التبديل' : 'سجل'}</button></form>`, sh => {
+    ${field(tr("التاريخ"), inp('date', t.date, 'date'))}
+    ${ed ? (rule ? `<div class="hint" style="margin:-4px 0 12px">${ic('repeat', 'i mini')} ${tr("هادي حركة كتعاود كل شهر (نهار")} ${rule.day}). ${tr("التبديل هنا كيمس غير هاد الشهر")} · <a href="#" data-act="editRec" data-id="${rule.id}">${tr("بدل القاعدة")}</a></div>` : '')
+      : `<label class="switch-row"><input type="checkbox" name="repeat" ${pre.repeat ? 'checked' : ''}><span class="sw"></span><span>${ic('repeat', 'i mini')} ${tr("كتعاود كل شهر")} <small class="muted">(${tr("الصالير، الكرا، الأنترنيت…)")}</small></span></label>`}
+    <button class="btn primary block" type="submit" style="padding:16px;font-size:16px">${ic('check')} ${ed ? tr("سجل التبديل") : tr("سجل")}</button></form>`, sh => {
     const f = $('#txForm', sh), grid = $('#catGrid', sh), a = f.amount;
     if (!ed) setTimeout(() => a.focus(), RM.matches ? 0 : 380);
     const pick = id => { sel = id; $$('.cat', grid).forEach(x => x.classList.toggle('on', x.dataset.cat === id)); };
@@ -505,40 +526,40 @@ function txSheet(t, pre = {}) {
       if (ed) S.tx = S.tx.map(x => x.id === t.id ? rec : x); else S.tx.push(rec);
       save(); askPersist(); closeSheet(); U.month = ym(rec.date); success(!ed); render();
       const ob = overBudgets(U.month).find(o => o.c.id === rec.cat && rec.type === 'exp');
-      setTimeout(() => ob ? (toast(`ردّ البال! فايت الميزانية ديال ${ob.c.name}`, 'alert'), vib([60, 50, 60])) : toast(ed ? 'تبدلات' : `تسجلات <span class="num">${fmt(amt)}</span>${rec.rec ? ' · كتعاود كل شهر' : ''}`, 'check', null, true), 700); };
+      setTimeout(() => ob ? (toast(`${tr("ردّ البال! فايت الميزانية ديال")} ${ob.c.name}`, 'alert'), vib([60, 50, 60])) : toast(ed ? tr("تبدلات") : `${tr("تسجلات")} <span class="num">${fmt(amt)}</span>${rec.rec ? (' · ' + tr("كتعاود كل شهر")) : ''}`, 'check', null, true), 700); };
   });
 }
 function stagIn(el) { [...el.children].forEach((c, i) => { c.style.animation = `rise .4s var(--ease) both ${i * 25}ms`; }); }
 
 function catSheet(kind, done) {
   let color = COLORS[0], icon = 'tag';
-  openSheet(head('فئة جديدة') + `<form id="catForm">${field('السمية', inp('name', '', 'text', 'required maxlength="20" placeholder="مثلا: Gym، الدراري…"'))}
-    ${field('اللون', `<div class="colors">${COLORS.map((c, i) => `<button type="button" data-c="${c}" class="${i ? '' : 'on'}" style="background:${c}"></button>`).join('')}</div>`)}
-    ${field('الأيقونة', `<div class="iconpick">${CAT_ICONS.map(n => `<button type="button" data-i="${n}" class="${n === icon ? 'on' : ''}">${ic(n)}</button>`).join('')}</div>`)}
-    <button class="btn primary block" type="submit">${ic('check')} زيد الفئة</button></form>`, sh => {
+  openSheet(head(tr("فئة جديدة")) + `<form id="catForm">${field(tr("السمية"), inp('name', '', 'text', ('required maxlength="20" placeholder="' + tr("مثلا: Gym، الدراري…") + '"')))}
+    ${field(tr("اللون"), `<div class="colors">${COLORS.map((c, i) => `<button type="button" data-c="${c}" class="${i ? '' : 'on'}" style="background:${c}"></button>`).join('')}</div>`)}
+    ${field(tr("الأيقونة"), `<div class="iconpick">${CAT_ICONS.map(n => `<button type="button" data-i="${n}" class="${n === icon ? 'on' : ''}">${ic(n)}</button>`).join('')}</div>`)}
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("زيد الفئة")}</button></form>`, sh => {
     const f = $('#catForm', sh); setTimeout(() => f.name.focus(), 350);
     $$('.colors button', sh).forEach(b => b.onclick = () => { color = b.dataset.c; $$('.colors button', sh).forEach(x => x.classList.toggle('on', x === b)); bounce(b); });
     $$('.iconpick button', sh).forEach(b => b.onclick = () => { icon = b.dataset.i; $$('.iconpick button', sh).forEach(x => x.classList.toggle('on', x === b)); bounce(b); });
     f.onsubmit = e => { e.preventDefault(); const name = f.name.value.trim(); if (!name) return invalid(f.name);
-      const c = { id:'c_' + uid(), name, ar:name, icon, color, kind, custom:true }; S.cats.push(c); save(); vib(15); done(c.id); };
+      const c = { id:'c_' + uid(), name, icon, color, kind, custom:true }; S.cats.push(c); save(); vib(15); done(c.id); };
   });
 }
 
 function budgetSheet(id) {
   const c = cat(id), T = monthTotals(U.month);
-  openSheet(head('Budget · ' + esc(c.name)) + `<form id="bf"><div class="row" style="margin-bottom:12px">${catIc(c)}<div><b>${esc(c.name)}</b><div class="muted" style="font-size:12px">صرفتي هاد الشهر: <span class="num">${fmt(T.by[id] || 0)}</span></div></div></div>
-    ${field('الميزانية ديال الشهر (DH)', inp('b', S.budgets[id] || '', 'number', 'placeholder="مثلا 1500"'))}
-    <button class="btn primary block" type="submit">${ic('check')} سجل</button>${S.budgets[id] ? `<button type="button" class="btn danger block" style="margin-top:8px" data-act="clearBudget" data-id="${id}">حيد الميزانية</button>` : ''}</form>`, sh => {
+  openSheet(head(fr('Budget') + ' · ' + esc(c.name)) + `<form id="bf"><div class="row" style="margin-bottom:12px">${catIc(c)}<div><b>${esc(c.name)}</b><div class="muted" style="font-size:12px">${tr("صرفتي هاد الشهر:")} <span class="num">${fmt(T.by[id] || 0)}</span></div></div></div>
+    ${field(tr("الميزانية ديال الشهر (DH)"), inp('b', S.budgets[id] || '', 'number', ('placeholder="' + tr("مثلا 1500") + '"')))}
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button>${S.budgets[id] ? `<button type="button" class="btn danger block" style="margin-top:8px" data-act="clearBudget" data-id="${id}">${tr("حيد الميزانية")}</button>` : ''}</form>`, sh => {
     const f = $('#bf', sh); setTimeout(() => f.b.focus(), 350);
-    f.onsubmit = e => { e.preventDefault(); const b = num(f.b.value); if (!(b > 0)) return invalid(f.b); S.budgets[id] = b; save(); closeSheet(); success(false); render(); toast('تسجلات الميزانية'); };
+    f.onsubmit = e => { e.preventDefault(); const b = num(f.b.value); if (!(b > 0)) return invalid(f.b); S.budgets[id] = b; save(); closeSheet(); success(false); render(); toast(tr("تسجلات الميزانية")); };
   });
 }
 
 function creditSheet(c) {
   const ed = !!c; c = c || { name:'', bank:'', total:'', monthly:'', remaining:'' };
-  openSheet(head(ed ? 'بدل الكريدي' : 'كريدي جديد', ed && 'delCredit', c.id) + `<form id="cf">${field('السمية', inp('name', c.name, 'text', 'required placeholder="مثلا: كريدي الطوموبيل"'))}${field('البنك (اختياري)', inp('bank', c.bank, 'text', 'placeholder="CIH, Attijari, Wafasalaf…"'))}
-    <div class="grid2">${field('Total (DH)', inp('total', c.total, 'number'))}${field('Mensualité (DH)', inp('monthly', c.monthly, 'number'))}</div>${field('Reste · الباقي (DH)', inp('remaining', c.remaining, 'number', 'placeholder="إلا خليتيها خاوية = Total"'))}
-    <button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(ed ? tr("بدل الكريدي") : tr("كريدي جديد"), ed && 'delCredit', c.id) + `<form id="cf">${field(tr("السمية"), inp('name', c.name, 'text', ('required placeholder="' + tr("مثلا: كريدي الطوموبيل") + '"')))}${field(tr("البنك (اختياري)"), inp('bank', c.bank, 'text', 'placeholder="CIH, Attijari, Wafasalaf…"'))}
+    <div class="grid2">${field(fr('Total') + ' (DH)', inp('total', c.total, 'number'))}${field(fr('Mensualité') + ' (DH)', inp('monthly', c.monthly, 'number'))}</div>${field(tr("Reste · الباقي (DH)"), inp('remaining', c.remaining, 'number', ('placeholder="' + tr("إلا خليتيها خاوية") + ' = Total"')))}
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#cf', sh);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name); if (!(num(v.total) > 0)) return invalid(f.total);
       const rec = { id:ed ? c.id : uid(), name:v.name.trim(), bank:v.bank.trim(), total:num(v.total), monthly:num(v.monthly), remaining:v.remaining === '' ? num(v.total) : Math.min(num(v.remaining), num(v.total)) };
@@ -547,8 +568,8 @@ function creditSheet(c) {
 }
 function creanceSheet(c) {
   const ed = !!c; c = c || { person:'', amount:'', note:'', date:today() };
-  openSheet(head(ed ? 'بدل' : 'شكون سالك؟', ed && 'delCreance', c.id) + `<form id="crf">${field('السمية', inp('person', c.person, 'text', 'required placeholder="مثلا: يوسف"'))}${field('شحال (DH)', inp('amount', c.amount, 'number'))}
-    ${field('ملاحظة', inp('note', c.note, 'text', 'placeholder="علاش سلفتيه؟"'))}${field('التاريخ', inp('date', c.date, 'date'))}<button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(ed ? tr("بدل") : tr("شكون سالك؟"), ed && 'delCreance', c.id) + `<form id="crf">${field(tr("السمية"), inp('person', c.person, 'text', ('required placeholder="' + tr("مثلا: يوسف") + '"')))}${field(tr("شحال (DH)"), inp('amount', c.amount, 'number'))}
+    ${field(tr("ملاحظة"), inp('note', c.note, 'text', ('placeholder="' + tr("علاش سلفتيه؟") + '"')))}${field(tr("التاريخ"), inp('date', c.date, 'date'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#crf', sh); if (!ed) setTimeout(() => f.person.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.person.trim()) return invalid(f.person); if (!(num(v.amount) > 0)) return invalid(f.amount);
       const rec = { id:ed ? c.id : uid(), person:v.person.trim(), amount:num(v.amount), note:v.note.trim(), date:v.date, paid:ed ? c.paid : false };
@@ -557,9 +578,9 @@ function creanceSheet(c) {
 }
 function assetSheet(a) {
   const ed = !!a; a = a || { type:'house', name:'', buy:'', current:'' };
-  openSheet(head(ed ? 'بدل' : 'زيد حاجة كتملكها', ed && 'delAsset', a.id) + `<form id="af"><div class="cats" style="grid-template-columns:repeat(5,1fr)">${Object.entries(ASSET_T).map(([k, t]) => `<button type="button" class="cat ${a.type === k ? 'on' : ''}" data-at="${k}">${catIc({ color:t[2], icon:t[1] })}<span>${t[0].split(' ')[0]}</span></button>`).join('')}</div>
-    ${field('السمية', inp('name', a.name, 'text', 'placeholder="مثلا: Dacia Logan 2019"'))}<div class="grid2">${field('شريتها بـ (DH)', inp('buy', a.buy, 'number'))}${field('كتسوا دابا (DH)', inp('current', a.current, 'number'))}</div>
-    <button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(ed ? tr("بدل") : tr("زيد حاجة كتملكها"), ed && 'delAsset', a.id) + `<form id="af"><div class="cats" style="grid-template-columns:repeat(5,1fr)">${Object.entries(ASSET_T).map(([k, t]) => `<button type="button" class="cat ${a.type === k ? 'on' : ''}" data-at="${k}">${catIc({ color:t[2], icon:t[1] })}<span>${t[0].split(' ')[0]}</span></button>`).join('')}</div>
+    ${field(tr("السمية"), inp('name', a.name, 'text', ('placeholder="' + tr("مثلا: Dacia Logan 2019") + '"')))}<div class="grid2">${field(tr("شريتها بـ (DH)"), inp('buy', a.buy, 'number'))}${field(tr("كتسوا دابا (DH)"), inp('current', a.current, 'number'))}</div>
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#af', sh); let type = a.type;
     $$('[data-at]', sh).forEach(b => b.onclick = () => { type = b.dataset.at; $$('[data-at]', sh).forEach(x => x.classList.toggle('on', x === b)); vib(8); });
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!(num(v.buy) > 0)) return invalid(f.buy);
@@ -569,9 +590,9 @@ function assetSheet(a) {
 }
 function rentalSheet(r) {
   const ed = !!r; r = r || { name:'', kind:'airbnb', price:'' };
-  openSheet(head(ed ? 'بدل الملك' : 'ملك جديد للكرا', ed && 'delRental', r.id) + `<form id="rf">${field('السمية', inp('name', r.name, 'text', 'required placeholder="مثلا: شقة مرتيل"'))}
-    <div class="type-toggle"><button type="button" class="inc ${r.kind === 'airbnb' ? 'on' : ''}" data-k="airbnb">Airbnb</button><button type="button" class="inc ${r.kind === 'long' ? 'on' : ''}" data-k="long">كرا عادي</button></div>
-    ${field('ثمن الشرا (DH) · باش نحسب الرونديمو', inp('price', r.price, 'number', 'placeholder="0 إلا كتكري ملك ديال الغير"'))}<button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(ed ? tr("بدل الملك") : tr("ملك جديد للكرا"), ed && 'delRental', r.id) + `<form id="rf">${field(tr("السمية"), inp('name', r.name, 'text', ('required placeholder="' + tr("مثلا: شقة مرتيل") + '"')))}
+    <div class="type-toggle"><button type="button" class="inc ${r.kind === 'airbnb' ? 'on' : ''}" data-k="airbnb">Airbnb</button><button type="button" class="inc ${r.kind === 'long' ? 'on' : ''}" data-k="long">${tr("كرا عادي")}</button></div>
+    ${field((tr("ثمن الشرا (DH)") + ' · ' + tr("باش نحسب الرونديمو")), inp('price', r.price, 'number', ('placeholder="0 ' + tr("إلا كتكري ملك ديال الغير") + '"')))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#rf', sh); let kind = r.kind;
     $$('[data-k]', sh).forEach(b => b.onclick = () => { kind = b.dataset.k; $$('[data-k]', sh).forEach(x => x.classList.toggle('on', x === b)); vib(8); });
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name);
@@ -580,9 +601,9 @@ function rentalSheet(r) {
   });
 }
 function rentEntrySheet(id, type) {
-  const r = S.rentals.find(x => x.id === id), L = { inc:['دخل · Revenu', 'مثلا: 3 ليالي Airbnb'], exp:['مصروف · Charge', 'مثلا: الضو، التنقية، Syndic'], reno:['إصلاح · Rénovation', 'مثلا: الصباغة، الكوزينة'] }[type];
-  openSheet(head(L[0] + ' · ' + esc(r.name)) + `<form id="ref"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
-    ${field('ملاحظة', inp('note', '', 'text', `placeholder="${L[1]}"`))}${field('التاريخ', inp('date', today(), 'date'))}<button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  const r = S.rentals.find(x => x.id === id), LB = { inc:[(LANG === 'ar' ? tr("دخل") + ' · Revenu' : tr("دخل")), tr("مثلا: 3 ليالي Airbnb")], exp:[(LANG === 'ar' ? tr("مصروف") + ' · Charge' : tr("مصروف")), tr("مثلا: الضو، التنقية، Syndic")], reno:[(LANG === 'ar' ? tr("إصلاح") + ' · Rénovation' : tr("إصلاح")), tr("مثلا: الصباغة، الكوزينة")] }[type];
+  openSheet(head(LB[0] + ' · ' + esc(r.name)) + `<form id="ref"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
+    ${field(tr("ملاحظة"), inp('note', '', 'text', `placeholder="${LB[1]}"`))}${field(tr("التاريخ"), inp('date', today(), 'date'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#ref', sh); setTimeout(() => f.amount.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const a = num(f.amount.value); if (!(a > 0)) return invalid(f.amount);
       r.entries.push({ id:uid(), type, amount:a, note:f.note.value.trim(), date:f.date.value || today() }); save(); closeSheet(); success(type === 'inc'); render(); };
@@ -591,33 +612,34 @@ function rentEntrySheet(id, type) {
 
 function settingsSheet() {
   const pin = pinData(), lb = S.settings.lastBackup;
-  openSheet(head('Paramètres · الإعدادات') + `
-    <div class="card"><h2>${ic('calendar')} نهار الصالير</h2><div class="muted" style="font-size:13px;margin-bottom:8px">باش نحسب شحال تقدر تصرف فالنهار حتى للصالير الجاي.</div>
-      <select class="input" id="paydaySel">${Array.from({ length:31 }, (_, i) => `<option value="${i + 1}" ${+S.settings.payday === i + 1 ? 'selected' : ''}>نهار ${i + 1} فالشهر</option>`).join('')}</select></div>
-    <div class="card"><h2>${ic('repeat')} Récurrents · اللي كيتعاود</h2>
-      ${S.recurring.length ? `<div class="list">${S.recurring.map(r => `<div class="item press" data-act="editRec" data-id="${r.id}" style="padding:10px">${catIc(cat(r.cat))}<div class="meta"><b>${esc(r.note || cat(r.cat).name)}</b><small>نهار ${r.day} كل شهر${r.end ? ' · حتى ' + monthLabel(r.end) : ''}${r.active ? '' : ' · موقوفة'}</small></div><div class="amt ${r.type === 'inc' ? 'pos' : ''}"><span class="num">${r.type === 'inc' ? '+' : '−'}${fmt(r.amount)}</span></div></div>`).join('')}</div>`
-        : '<div class="muted" style="font-size:13px">حتى حاجة. ملي تزيد حركة، كوش على «كتعاود كل شهر» (الصالير، الكرا، Inwi…) وغادي تتزاد بوحدها.</div>'}
-      <button class="btn sm" style="margin-top:10px" data-act="addRec">${ic('plus')} زيد وحدة</button></div>
-    <div class="card"><h2>${ic('shield')} Sauvegarde · نسخة احتياطية</h2>
-      <div class="muted" style="font-size:13px;margin-bottom:6px">الداتا ديالك كتبقى غير فهاد التيليفون. إلا مسحتي التطبيق ولا المتصفح، كتمشي. دير نسخة وخبيها فـWhatsApp ولا Drive.</div>
-      <div class="kv"><span>آخر نسخة</span><b>${lb ? esc(lb) : 'عمرك ما درتي'}</b></div>
-      <div class="kv"><span>حماية من المسح التلقائي</span><b>${U.persist === true ? '✓ مفعلة' : U.persist === false ? 'ما تقبلاتش' : '…'}</b></div>
-      ${U.persist === false ? '<div class="hint" style="text-align:start">المتصفح ما عطاش الحماية. فالآيفون حط التطبيق فالشاشة الرئيسية، ودير نسخة من وقت لوقت.</div>' : ''}
+  openSheet(head(tr("Paramètres · الإعدادات")) + `
+    <div class="card"><h2>🌍 ${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}</h2>${langPick()}</div>
+    <div class="card"><h2>${ic('calendar')} ${tr("نهار الصالير")}</h2><div class="muted" style="font-size:13px;margin-bottom:8px">${tr("باش نحسب شحال تقدر تصرف فالنهار حتى للصالير الجاي.")}</div>
+      <select class="input" id="paydaySel">${Array.from({ length:31 }, (_, i) => `<option value="${i + 1}" ${+S.settings.payday === i + 1 ? 'selected' : ''}>${tr("نهار")} ${i + 1} ${tr("فالشهر")}</option>`).join('')}</select></div>
+    <div class="card"><h2>${ic('repeat')} ${tr("Récurrents · اللي كيتعاود")}</h2>
+      ${S.recurring.length ? `<div class="list">${S.recurring.map(r => `<div class="item press" data-act="editRec" data-id="${r.id}" style="padding:10px">${catIc(cat(r.cat))}<div class="meta"><b>${esc(r.note || cat(r.cat).name)}</b><small>${tr("نهار")} ${r.day} ${tr("كل شهر")}${r.end ? (' · ' + tr("حتى") + ' ') + monthLabel(r.end) : ''}${r.active ? '' : (' · ' + tr("موقوفة"))}</small></div><div class="amt ${r.type === 'inc' ? 'pos' : ''}"><span class="num">${r.type === 'inc' ? '+' : '−'}${fmt(r.amount)}</span></div></div>`).join('')}</div>`
+        : ('<div class="muted" style="font-size:13px">' + tr("حتى حاجة. ملي تزيد حركة، كوش على «كتعاود كل شهر» (الصالير، الكرا، Inwi…) وغادي تتزاد بوحدها.") + '</div>')}
+      <button class="btn sm" style="margin-top:10px" data-act="addRec">${ic('plus')} ${tr("زيد وحدة")}</button></div>
+    <div class="card"><h2>${ic('shield')} ${tr("Sauvegarde · نسخة احتياطية")}</h2>
+      <div class="muted" style="font-size:13px;margin-bottom:6px">${tr("الداتا ديالك كتبقى غير فهاد التيليفون. إلا مسحتي التطبيق ولا المتصفح، كتمشي. دير نسخة وخبيها فـWhatsApp ولا Drive.")}</div>
+      <div class="kv"><span>${tr("آخر نسخة")}</span><b>${lb ? esc(lb) : tr("عمرك ما درتي")}</b></div>
+      <div class="kv"><span>${tr("حماية من المسح التلقائي")}</span><b>${U.persist === true ? ('✓ ' + tr("مفعلة")) : U.persist === false ? tr("ما تقبلاتش") : '…'}</b></div>
+      ${U.persist === false ? ('<div class="hint" style="text-align:start">' + tr("المتصفح ما عطاش الحماية. فالآيفون حط التطبيق فالشاشة الرئيسية، ودير نسخة من وقت لوقت.") + '</div>') : ''}
       <div class="grid2" style="margin-top:10px"><button class="btn" data-act="export">${ic('download')} Export</button><button class="btn" data-act="import">${ic('upload')} Import</button></div></div>
-    <div class="card"><h2>${ic('lock')} Code PIN</h2><div class="muted" style="font-size:13px;margin-bottom:10px">${pin ? 'التطبيق مسدود بالرمز. كيتسد بوحدو إلا خرجتي منو كثر من دقيقة.' : 'حط رمز ديال 4 أرقام باش حتى واحد ما يشوف الفلوس ديالك إلا شد التيليفون.'} الرمز كيسد الشاشة، ولكن ما كيشفرش الداتا.</div>
-      ${pin ? `<div class="grid2"><button class="btn" data-act="setPin">بدل الرمز</button><button class="btn danger" data-act="removePin">حيد الرمز</button></div>` : `<button class="btn primary block" data-act="setPin">${ic('lock')} حط رمز</button>`}</div>
-    <div class="card"><h2>${ic('phone')} Back Tap (iPhone)</h2><div class="muted" style="font-size:13px;line-height:1.8">1. Raccourcis → + → «Ouvrir l'URL» → <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.</div>
-    <button class="btn sm" style="margin-top:8px" data-act="copyLink">نسخ الرابط</button></div>
-    <div class="card"><h2>${ic('spark')} Démo</h2><div class="grid2"><button class="btn" data-act="demo">زيد داتا تجربة</button><button class="btn danger" data-act="reset">${ic('trash')} مسح كلشي</button></div></div>
-    <div class="hint">مصاريفي v2 · بلا حساب، بلا سيرفر، بلا إشهار · الداتا ديالك عندك</div>`, sh => {
-    $('#paydaySel', sh).onchange = e => { S.settings.payday = +e.target.value; save(); vib(8); toast('تسجل نهار الصالير'); render(); };
+    <div class="card"><h2>${ic('lock')} ${fr('Code PIN')}</h2><div class="muted" style="font-size:13px;margin-bottom:10px">${pin ? tr("التطبيق مسدود بالرمز. كيتسد بوحدو إلا خرجتي منو كثر من دقيقة.") : tr("حط رمز ديال 4 أرقام باش حتى واحد ما يشوف الفلوس ديالك إلا شد التيليفون.")} ${tr("الرمز كيسد الشاشة، ولكن ما كيشفرش الداتا.")}</div>
+      ${pin ? `<div class="grid2"><button class="btn" data-act="setPin">${tr("بدل الرمز")}</button><button class="btn danger" data-act="removePin">${tr("حيد الرمز")}</button></div>` : `<button class="btn primary block" data-act="setPin">${ic('lock')} ${tr("حط رمز")}</button>`}</div>
+    <div class="card"><h2>${ic('phone')} Back Tap (iPhone)</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:"1. Raccourcis → + → «Ouvrir l'URL» →", en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
+    <button class="btn sm" style="margin-top:8px" data-act="copyLink">${tr("نسخ الرابط")}</button></div>
+    <div class="card"><h2>${ic('trash')} ${tr("مسح كلشي")}</h2><button class="btn danger block" data-act="reset">${ic('trash')} ${tr("مسح كلشي")}</button></div>
+    <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")}</div>`, sh => {
+    $('#paydaySel', sh).onchange = e => { S.settings.payday = +e.target.value; save(); vib(8); toast(tr("تسجل نهار الصالير")); render(); };
   });
 }
 
 /* ---------- actions ---------- */
 async function exportData() {
   const json = JSON.stringify({ app:'msarifi', exported:new Date().toISOString(), data:S }, null, 2), name = `msarifi-backup-${today()}.json`;
-  const done = () => { S.settings.lastBackup = today(); S.settings.backupSnooze = null; save(); render(); toast('تصاوبات النسخة · خبيها مزيان'); };
+  const done = () => { S.settings.lastBackup = today(); S.settings.backupSnooze = null; save(); render(); toast((tr("تصاوبات النسخة") + ' · ' + tr("خبيها مزيان"))); };
   try { const file = new File([json], name, { type:'application/json' });
     if (navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'Msarifi backup' }); return done(); } } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type:'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -626,77 +648,48 @@ async function exportData() {
 function importData(file) {
   const rd = new FileReader();
   rd.onload = () => { try { const j = JSON.parse(rd.result), d = j.data || j; if (!Array.isArray(d.tx)) throw 0;
-      if (!confirm('غادي تبدل الداتا اللي كاينة بهاد النسخة. متأكد؟')) return;
-      localStorage.setItem(KEY, JSON.stringify(d)); load(); runRecurring(); closeSheet(); render(); success(); toast('رجعات الداتا'); } catch (e) { toast('الملف ماشي صحيح', 'alert'); } };
+      if (!confirm(tr("غادي تبدل الداتا اللي كاينة بهاد النسخة. متأكد؟"))) return;
+      localStorage.setItem(KEY, JSON.stringify(d)); load(); runRecurring(); closeSheet(); render(); success(); toast(tr("رجعات الداتا")); } catch (e) { toast(tr("الملف ماشي صحيح"), 'alert'); } };
   rd.readAsText(file);
 }
-function demo() {
-  const m0 = ym(today()), d = (m, day) => `${m}-${String(day).padStart(2, '0')}`;
-  const maxDay = +today().slice(8);
-  for (let k = 5; k >= 0; k--) {
-    const m = addMonth(m0, -k), lim = k ? 28 : Math.max(1, maxDay);
-    const add = (type, cat, amount, note, day) => S.tx.push({ id:uid(), ts:Date.now() + Math.random(), type, cat, amount, note, date:d(m, Math.min(lim, day)) });
-    if (k % 2) add('inc', 'extra', 800 + k * 100, 'خدمة إضافية', 15);
-    add('exp', 'factures', 420 + k * 15, 'Lydec', 3); 
-    add('exp', 'courses', 150, 'المرجان', 2); add('exp', 'courses', 640 + k * 30, 'Marjane', 9); add('exp', 'courses', 380, 'BIM', Math.min(lim, 18));
-    add('exp', 'cafe', 25, 'قهوة', 5); add('exp', 'cafe', 40, 'قهوة مع صحابي', 12);
-    add('exp', 'sorties', 260 + k * 20, 'عشا', 11); add('exp', 'transport', 300, 'Tram + Taxi', 6); add('exp', 'credit', 1850, 'Crédit voiture', 5);
-    if (k === 2) add('exp', 'sante', 350, 'Pharmacie', 20);
-  }
-  const start = addMonth(m0, -5);
-  S.recurring.push({ id:'r_' + uid(), type:'inc', amount:9000, cat:'salaire', note:'الصالير', day:1, start, end:'', active:true, skip:[] },
-    { id:'r_' + uid(), type:'exp', amount:199, cat:'factures', note:'Inwi Fibre', day:4, start, end:'', active:true, skip:[] },
-    { id:'r_' + uid(), type:'exp', amount:99, cat:'sorties', note:'Netflix', day:27, start, end:'', active:true, skip:[] });
-  runRecurring();
-  S.goals.push({ id:uid(), name:'عطلة فالصيف', target:8000, saved:3200, deadline:addMonth(m0, 7) }, { id:uid(), name:'Fonds d\'urgence · احتياط', target:27000, saved:9500, deadline:'' });
-  S.budgets = { cafe:200, courses:1200, factures:700, sorties:300, transport:400 };
-  S.credits.push({ id:uid(), name:'كريدي الطوموبيل', bank:'Wafasalaf', total:85000, monthly:1850, remaining:52300 });
-  S.creances.push({ id:uid(), person:'يوسف', amount:500, note:'سلفة', date:d(m0, 1), paid:false }, { id:uid(), person:'كريم', amount:1200, note:'تيليفون', date:d(addMonth(m0, -1), 20), paid:false }, { id:uid(), person:'سعاد', amount:300, note:'', date:d(addMonth(m0, -2), 8), paid:true });
-  S.assets.push({ id:uid(), type:'house', name:'شقة الدار البيضاء', buy:650000, current:720000 }, { id:uid(), type:'car', name:'Dacia Logan', buy:120000, current:95000 }, { id:uid(), type:'gold', name:'الذهب', buy:18000, current:24500 }, { id:uid(), type:'crypto', name:'Bitcoin', buy:5000, current:6200 });
-  const r = { id:uid(), name:'شقة مرتيل', kind:'airbnb', price:480000, entries:[] };
-  r.entries.push({ id:uid(), type:'reno', amount:35000, note:'الصباغة والكوزينة', date:d(addMonth(m0, -5), 2) });
-  for (let k = 4; k >= 0; k--) { const m = addMonth(m0, -k); r.entries.push({ id:uid(), type:'inc', amount:4200 + (k === 2 ? 3000 : 0), note:'Airbnb', date:d(m, 10) }, { id:uid(), type:'exp', amount:650, note:'التنقية + الضو', date:d(m, 12) }); }
-  S.rentals.push(r, { id:uid(), name:'Studio Maarif', kind:'long', price:0, entries:[{ id:uid(), type:'inc', amount:3500, note:'الكرا', date:d(m0, 1) }, { id:uid(), type:'exp', amount:200, note:'Syndic', date:d(m0, 3) }] });
-  save(); closeSheet(); U.month = m0; render(); success(); toast('تزادت داتا ديال التجربة');
-}
-
 const ACT = {
+  setLang:b => setLang(b.dataset.lang),
   add:() => txSheet(), close:closeSheet, goTx:() => go('tx'),
   mPrev:() => { U.month = addMonth(U.month, -1); vib(6); render(); }, mNext:() => { U.month = addMonth(U.month, 1); vib(6); render(); },
   editTx:(el) => { if (el._swiped) return; txSheet(S.tx.find(t => t.id === el.dataset.id)); },
-  delTx:(el) => { const snap = JSON.stringify(S); skipRec(S.tx.find(t => t.id === el.dataset.id)); S.tx = S.tx.filter(t => t.id !== el.dataset.id); save(); closeSheet(); render(); toast('تمسحات', 'trash', { label:'رجعها', fn:() => { S = JSON.parse(snap); save(); render(); } }); },
+  delTx:(el) => { const snap = JSON.stringify(S); skipRec(S.tx.find(t => t.id === el.dataset.id)); S.tx = S.tx.filter(t => t.id !== el.dataset.id); save(); closeSheet(); render(); toast(tr("تمسحات"), 'trash', { label:tr("رجعها"), fn:() => { S = JSON.parse(snap); save(); render(); } }); },
   setBudget:(el) => budgetSheet(el.dataset.id), clearBudget:(el) => { delete S.budgets[el.dataset.id]; save(); closeSheet(); render(); },
   addCredit:() => creditSheet(), editCredit:(el) => creditSheet(S.credits.find(c => c.id === el.dataset.id)),
-  delCredit:(el) => { if (!confirm('نمسحو هاد الكريدي؟')) return; S.credits = S.credits.filter(c => c.id !== el.dataset.id); save(); closeSheet(); render(); },
+  delCredit:(el) => { if (!confirm(tr("نمسحو هاد الكريدي؟"))) return; S.credits = S.credits.filter(c => c.id !== el.dataset.id); save(); closeSheet(); render(); },
   payCredit:(el) => { const c = S.credits.find(x => x.id === el.dataset.id); const p = Math.min(c.monthly || c.remaining, c.remaining);
     c.remaining = Math.max(0, Math.round((c.remaining - p) * 100) / 100);
     S.tx.push({ id:uid(), ts:Date.now(), type:'exp', cat:'credit', amount:p, note:'Mensualité · ' + c.name, date:today() });
-    save(); success(c.remaining === 0); render(); toast(c.remaining === 0 ? 'مبروك! سالا الكريدي 🎉' : `تسجلات المونسياليتي <span class="num">${fmt(p)}</span>`, 'check', null, true); },
+    save(); success(c.remaining === 0); render(); toast(c.remaining === 0 ? (tr("مبروك! سالا الكريدي") + ' 🎉') : `${tr("تسجلات المونسياليتي")} <span class="num">${fmt(p)}</span>`, 'check', null, true); },
   addCreance:() => creanceSheet(), editCreance:(el) => creanceSheet(S.creances.find(c => c.id === el.dataset.id)),
   delCreance:(el) => { S.creances = S.creances.filter(c => c.id !== el.dataset.id); save(); closeSheet(); render(); },
   togglePaid:(el) => { const c = S.creances.find(x => x.id === el.dataset.id); c.paid = !c.paid; save(); bounce(el); el.classList.toggle('on', c.paid);
-    if (c.paid) { success(true); toast(`${esc(c.person)} خلصك <span class="num">${fmt(c.amount)}</span>`, 'check', null, true); } else vib(10); setTimeout(render, 450); },
+    if (c.paid) { success(true); toast(`${esc(c.person)} ${tr("خلصك")} <span class="num">${fmt(c.amount)}</span>`, 'check', null, true); } else vib(10); setTimeout(render, 450); },
   addAsset:() => assetSheet(), editAsset:(el) => { if (el._swiped) return; assetSheet(S.assets.find(a => a.id === el.dataset.id)); },
   delAsset:(el) => { S.assets = S.assets.filter(a => a.id !== el.dataset.id); save(); closeSheet(); render(); },
   addRental:() => rentalSheet(), editRental:(el) => rentalSheet(S.rentals.find(r => r.id === el.dataset.id)),
-  delRental:(el) => { if (!confirm('نمسحو هاد الملك وكاع الحركات ديالو؟')) return; S.rentals = S.rentals.filter(r => r.id !== el.dataset.id); save(); closeSheet(); render(); },
+  delRental:(el) => { if (!confirm(tr("نمسحو هاد الملك وكاع الحركات ديالو؟"))) return; S.rentals = S.rentals.filter(r => r.id !== el.dataset.id); save(); closeSheet(); render(); },
   rentEntry:(el) => rentEntrySheet(el.dataset.id, el.dataset.type),
   addRec:() => txSheet(null, { repeat:true }), editRec:(el) => { recSheet(S.recurring.find(r => r.id === el.dataset.id)); },
-  setPin:() => { closeSheet(); setTimeout(() => showLock('set'), 250); }, removePin:() => { if (!confirm('نحيدو الرمز؟')) return; localStorage.removeItem(PINK); closeSheet(); toast('تحيد الرمز'); },
+  setPin:() => { closeSheet(); setTimeout(() => showLock('set'), 250); }, removePin:() => { if (!confirm(tr("نحيدو الرمز؟"))) return; localStorage.removeItem(PINK); closeSheet(); toast(tr("تحيد الرمز")); },
   addGoal:() => goalSheet(), editGoal:(el) => goalSheet(S.goals.find(g => g.id === el.dataset.id)), fundGoal:(el) => fundSheet(el.dataset.id),
-  delGoal:(el) => { if (!confirm('نمسحو هاد الهدف؟')) return; S.goals = S.goals.filter(g => g.id !== el.dataset.id); save(); closeSheet(); render(); },
+  delGoal:(el) => { if (!confirm(tr("نمسحو هاد الهدف؟"))) return; S.goals = S.goals.filter(g => g.id !== el.dataset.id); save(); closeSheet(); render(); },
   allInsights:() => insightsSheet(), backupNow:() => exportData(),
   snoozeBackup:() => { S.settings.backupSnooze = isoD(new Date(Date.now() + 7 * DAY)); save(); render(); },
-  export:exportData, import:() => $('#importFile').click(), demo,
-  reset:() => { if (!confirm('غادي تمسح كاع الداتا. متأكد؟')) return; S = blank(); U.counts = {}; save(); closeSheet(); render(); toast('تمسح كلشي', 'trash'); },
-  copyLink:() => { const u = location.origin + location.pathname + '?add=1'; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast('تنسخ الرابط'), () => prompt('نسخ هاد الرابط:', u)); }
+  export:exportData, import:() => $('#importFile').click(),
+  reset:() => { if (!confirm(tr("غادي تمسح كاع الداتا. متأكد؟"))) return; S = blank(); U.counts = {}; save(); closeSheet(); render(); toast(tr("تمسح كلشي"), 'trash'); },
+  copyLink:() => { const u = location.origin + location.pathname + '?add=1'; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast(tr("تنسخ الرابط")), () => prompt(tr("نسخ هاد الرابط:"), u)); }
 };
 
 function setPriv(on, anim) {
   const d = document.documentElement; if (on) d.dataset.priv = '1'; else delete d.dataset.priv;
   try { localStorage.setItem('msarifi.priv', on ? '1' : '0'); } catch (e) {}
-  const b = $('#privBtn'); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'بين الأرقام' : 'خبي الأرقام');
-  if (anim) { bounce(b); vib(10); toast(on ? 'الأرقام مخبية 🙈' : 'الأرقام باينة 👀', on ? 'x' : 'check'); }
+  const b = $('#privBtn'); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? tr("بين الأرقام") : tr("خبي الأرقام"));
+  if (anim) { bounce(b); vib(10); toast(on ? (tr("الأرقام مخبية") + ' 🙈') : (tr("الأرقام باينة") + ' 👀'), on ? 'x' : 'check'); }
 }
 function setTheme(t) {
   document.documentElement.dataset.theme = t; localStorage.setItem('msarifi.theme', t);
@@ -709,7 +702,7 @@ const parseD = s => new Date(s + 'T12:00');
 const isoD = d => d.toLocaleDateString('en-CA');
 const daysIn = m => { const [y, mo] = m.split('-').map(Number); return new Date(y, mo, 0).getDate(); };
 const dateIn = (m, day) => `${m}-${String(Math.min(day, daysIn(m))).padStart(2, '0')}`;
-const dayLabel = s => { const d = parseD(s); return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`; };
+const dayLabel = s => { const d = parseD(s); return LANG === 'en' ? `${DAYN()[d.getDay()]}, ${MON()[d.getMonth()]} ${d.getDate()}` : `${DAYN()[d.getDay()]} ${d.getDate()} ${MON()[d.getMonth()]}`; };
 const diffDays = (a, b) => Math.round((parseD(b) - parseD(a)) / DAY);
 const addDays = (s, n) => isoD(new Date(parseD(s).getTime() + n * DAY));
 const M = n => `<span class="num">${fmt(n)}</span>`;
@@ -733,19 +726,19 @@ function runRecurring() {
 function skipRec(t) { if (!t || !t.rec) return; const r = S.recurring.find(x => x.id === t.rec); if (r) { r.skip = r.skip || []; if (!r.skip.includes(ym(t.date))) r.skip.push(ym(t.date)); } }
 function recSheet(r) {
   if (!r) return;
-  openSheet(head('حركة كتعاود', 'delRec', r.id) + `<form id="recf"><div class="row" style="margin-bottom:12px">${catIc(cat(r.cat))}<div><b>${esc(r.note || cat(r.cat).name)}</b><div class="muted" style="font-size:12px">${r.type === 'inc' ? 'Revenu' : 'Dépense'} · ${esc(cat(r.cat).name)} · من ${monthLabel(r.start)}</div></div></div>
-    <div class="grid2">${field('المبلغ (DH)', inp('amount', r.amount, 'number'))}${field('النهار فالشهر', inp('day', r.day, 'number', 'min="1" max="31"'))}</div>
-    ${field('حتى لشهر (اختياري)', inp('end', r.end || '', 'month'))}
-    <label class="switch-row"><input type="checkbox" name="active" ${r.active ? 'checked' : ''}><span class="sw"></span><span>خدامة</span></label>
-    <div class="hint" style="margin:0 0 10px">التبديل كيمس غير الشهور الجاية، الحركات اللي تزادو قبل كيبقاو كيف هوما.</div>
-    <button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(tr("حركة كتعاود"), 'delRec', r.id) + `<form id="recf"><div class="row" style="margin-bottom:12px">${catIc(cat(r.cat))}<div><b>${esc(r.note || cat(r.cat).name)}</b><div class="muted" style="font-size:12px">${r.type === 'inc' ? 'Revenu' : 'Dépense'} · ${esc(cat(r.cat).name)} · ${tr("من")} ${monthLabel(r.start)}</div></div></div>
+    <div class="grid2">${field(tr("المبلغ (DH)"), inp('amount', r.amount, 'number'))}${field(tr("النهار فالشهر"), inp('day', r.day, 'number', 'min="1" max="31"'))}</div>
+    ${field(tr("حتى لشهر (اختياري)"), inp('end', r.end || '', 'month'))}
+    <label class="switch-row"><input type="checkbox" name="active" ${r.active ? 'checked' : ''}><span class="sw"></span><span>${tr("خدامة")}</span></label>
+    <div class="hint" style="margin:0 0 10px">${tr("التبديل كيمس غير الشهور الجاية، الحركات اللي تزادو قبل كيبقاو كيف هوما.")}</div>
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#recf', sh);
     f.onsubmit = e => { e.preventDefault(); const a = num(f.amount.value), d = Math.round(num(f.day.value));
       if (!(a > 0)) return invalid(f.amount); if (!(d >= 1 && d <= 31)) return invalid(f.day);
-      Object.assign(r, { amount:a, day:d, end:f.end.value || '', active:f.active.checked }); save(); runRecurring(); closeSheet(); success(false); render(); toast('تبدلات القاعدة'); };
+      Object.assign(r, { amount:a, day:d, end:f.end.value || '', active:f.active.checked }); save(); runRecurring(); closeSheet(); success(false); render(); toast(tr("تبدلات القاعدة")); };
   });
 }
-ACT.delRec = el => { if (!confirm('نوقفو هاد القاعدة؟ الحركات اللي تزادو غادي يبقاو.')) return; S.recurring = S.recurring.filter(r => r.id !== el.dataset.id); save(); closeSheet(); render(); };
+ACT.delRec = el => { if (!confirm(tr("نوقفو هاد القاعدة؟ الحركات اللي تزادو غادي يبقاو."))) return; S.recurring = S.recurring.filter(r => r.id !== el.dataset.id); save(); closeSheet(); render(); };
 
 /* ---------- smart insights (computed only from the user's data) ---------- */
 function payPeriod() {
@@ -765,12 +758,12 @@ function upcomingRec(from, to, type = 'exp') {
   }
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
+/*i18n-skip*/
 function insights() {
   const t = today(), m = ym(t), dom = +t.slice(8), dim = daysIn(m), lm = addMonth(m, -1);
   const exp = S.tx.filter(x => x.type === 'exp'), inc = S.tx.filter(x => x.type === 'inc');
-  const out = [];
+  const out = [], mName = MON()[+m.slice(5) - 1], lmName = MON()[+lm.slice(5) - 1], cn = id => `<b>${esc(cat(id).name)}</b>`;
   if (S.tx.length < 5) return { thin:true, safe:null, list:out };
-  /* 1. safe to spend per day until next payday */
   const pp = payPeriod(), inP = x => x.date >= pp.start && x.date <= t;
   const pInc = sumA(inc.filter(inP)), pExp = sumA(exp.filter(inP)), ups = upcomingRec(t, pp.next), upSum = ups.reduce((s, u) => s + +u.r.amount, 0);
   let safe = null;
@@ -780,94 +773,123 @@ function insights() {
     const vx = exp.filter(x => inP(x) && !x.rec && x.cat !== 'credit'), vs = sumA(vx);
     if (pp.elapsed >= 4 && vx.length >= 3 && vs > 0) {
       const avg = vs / pp.elapsed;
-      if (avail <= 0) out.push({ tone:'bad', icon:'alert', html:`صرفتي كثر من المدخول ديال هاد الفترة بـ ${M(-avail)} (حاسبين حتى الفواتير الجاية). باقي ${pp.left} يوم للصالير.` });
-      else { const dz = Math.floor(avail / avg);
-        if (dz < pp.left) out.push({ tone:'bad', icon:'down', html:`بهاد الريتم (${M(avg)} فالنهار) غادي يسالي الصالير <b>${dayLabel(addDays(t, dz))}</b>، يعني ${pp.left - dz} يوم قبل الصالير الجاي.` });
-        else out.push({ tone:'good', icon:'up', html:`بهاد الريتم (${M(avg)} فالنهار) غادي يبقى ليك تقريبا ${M(avail - avg * pp.left)} ملي يجي الصالير ${dayLabel(pp.next)}.` }); }
+      if (avail <= 0) out.push({ tone:'bad', icon:'alert', html:L({
+        ar:`صرفتي كثر من المدخول ديال هاد الفترة بـ ${M(-avail)} (حاسبين حتى الفواتير الجاية). باقي ${pp.left} يوم للصالير.`,
+        en:`You've spent ${M(-avail)} more than this period's income (upcoming bills included). ${pp.left} days to payday.`,
+        fr:`Tu as dépensé ${M(-avail)} de plus que les revenus de la période (factures à venir comprises). Encore ${pp.left} jours avant la paie.` }) });
+      else { const dz = Math.floor(avail / avg), d = dayLabel(addDays(t, dz)), gap = pp.left - dz;
+        if (dz < pp.left) out.push({ tone:'bad', icon:'down', html:L({
+          ar:`بهاد الريتم (${M(avg)} فالنهار) غادي يسالي الصالير <b>${d}</b>، يعني ${gap} يوم قبل الصالير الجاي.`,
+          en:`At this pace (${M(avg)} a day) your salary runs out on <b>${d}</b>, ${gap} days before next payday.`,
+          fr:`À ce rythme (${M(avg)} par jour), ton salaire sera épuisé le <b>${d}</b>, ${gap} jours avant la prochaine paie.` }) });
+        else out.push({ tone:'good', icon:'up', html:L({
+          ar:`بهاد الريتم (${M(avg)} فالنهار) غادي يبقى ليك تقريبا ${M(avail - avg * pp.left)} ملي يجي الصالير ${dayLabel(pp.next)}.`,
+          en:`At this pace (${M(avg)} a day) you'll have about ${M(avail - avg * pp.left)} left on payday, ${dayLabel(pp.next)}.`,
+          fr:`À ce rythme (${M(avg)} par jour), il te restera environ ${M(avail - avg * pp.left)} le jour de paie, ${dayLabel(pp.next)}.` }) }); }
     }
   }
-  /* 2. top category share this month */
   const mExp = exp.filter(x => ym(x.date) === m), mTot = sumA(mExp), by = {};
   mExp.forEach(x => by[x.cat] = (by[x.cat] || 0) + +x.amount);
-  if (mExp.length >= 5 && mTot > 0) { const [id, v] = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
-    out.push({ tone:'info', icon:'pie', html:`<b>${esc(cat(id).name)}</b> كلات ليك ${PC(v / mTot * 100)} من المصاريف هاد الشهر (${M(v)}).` }); }
-  /* 3. vs last month at the same day */
+  if (mExp.length >= 5 && mTot > 0) { const [id, v] = Object.entries(by).sort((a, b) => b[1] - a[1])[0], p = PC(v / mTot * 100);
+    out.push({ tone:'info', icon:'pie', html:L({ ar:`${cn(id)} كلات ليك ${p} من المصاريف هاد الشهر (${M(v)}).`, en:`${cn(id)} took ${p} of your spending this month (${M(v)}).`, fr:`${cn(id)} représente ${p} de tes dépenses ce mois-ci (${M(v)}).` }) }); }
   const lmTo = exp.filter(x => ym(x.date) === lm && +x.date.slice(8) <= dom), lmSum = sumA(lmTo);
-  if (lmSum > 0 && mExp.length >= 3) { const ch = (mTot - lmSum) / lmSum * 100;
-    out.push(Math.abs(ch) < 5 ? { tone:'info', icon:'calendar', html:`حتى لـ ${dom} ${MONTHS[+m.slice(5) - 1]} صرفتي ${M(mTot)}، تقريبا بحال نفس الوقت فالشهر اللي فات (${M(lmSum)}).` }
-      : { tone:ch > 0 ? 'warn' : 'good', icon:ch > 0 ? 'up' : 'down', html:`حتى لـ ${dom} ${MONTHS[+m.slice(5) - 1]} صرفتي ${M(mTot)}، ${ch > 0 ? 'كثر' : 'قل'} بـ ${PC(Math.abs(ch))} من نفس الوقت فالشهر اللي فات (${M(lmSum)}).` }); }
-  /* 4. biggest increase per category */
+  if (lmSum > 0 && mExp.length >= 3) { const ch = (mTot - lmSum) / lmSum * 100, up = ch > 0, a = PC(Math.abs(ch));
+    out.push(Math.abs(ch) < 5 ? { tone:'info', icon:'calendar', html:L({
+        ar:`حتى لـ ${dom} ${mName} صرفتي ${M(mTot)}، تقريبا بحال نفس الوقت فالشهر اللي فات (${M(lmSum)}).`,
+        en:`By ${mName} ${dom} you've spent ${M(mTot)}, about the same as this time last month (${M(lmSum)}).`,
+        fr:`Au ${dom} ${mName}, tu as dépensé ${M(mTot)}, à peu près comme le mois dernier à la même date (${M(lmSum)}).` }) }
+      : { tone:up ? 'warn' : 'good', icon:up ? 'up' : 'down', html:L({
+        ar:`حتى لـ ${dom} ${mName} صرفتي ${M(mTot)}، ${up ? 'كثر' : 'قل'} بـ ${a} من نفس الوقت فالشهر اللي فات (${M(lmSum)}).`,
+        en:`By ${mName} ${dom} you've spent ${M(mTot)}, ${a} ${up ? 'more' : 'less'} than this time last month (${M(lmSum)}).`,
+        fr:`Au ${dom} ${mName}, tu as dépensé ${M(mTot)}, soit ${a} de ${up ? 'plus' : 'moins'} que le mois dernier à la même date (${M(lmSum)}).` }) }); }
   if (lmTo.length) { const pby = {}; lmTo.forEach(x => pby[x.cat] = (pby[x.cat] || 0) + +x.amount);
-    const best = Object.keys(by).map(id => ({ id, cur:by[id], prev:pby[id] || 0, d:by[id] - (pby[id] || 0) })).filter(x => x.d >= 100 && (!x.prev || x.d / x.prev >= .3)).sort((a, b) => b.d - a.d)[0];
-    if (best) out.push({ tone:'warn', icon:'up', html:`أكبر زيادة: <b>${esc(cat(best.id).name)}</b> ${M(best.cur)} هاد الشهر مقابل ${M(best.prev)} فنفس الوقت ديال الشهر اللي فات (+${M(best.d)}).` }); }
-  /* 5. small frequent spends */
+    const b = Object.keys(by).map(id => ({ id, cur:by[id], prev:pby[id] || 0, d:by[id] - (pby[id] || 0) })).filter(x => x.d >= 100 && (!x.prev || x.d / x.prev >= .3)).sort((a, c) => c.d - a.d)[0];
+    if (b) out.push({ tone:'warn', icon:'up', html:L({
+      ar:`أكبر زيادة: ${cn(b.id)} ${M(b.cur)} هاد الشهر مقابل ${M(b.prev)} فنفس الوقت ديال الشهر اللي فات (+${M(b.d)}).`,
+      en:`Biggest increase: ${cn(b.id)} ${M(b.cur)} this month vs ${M(b.prev)} at this point last month (+${M(b.d)}).`,
+      fr:`Plus forte hausse : ${cn(b.id)} ${M(b.cur)} ce mois-ci contre ${M(b.prev)} à la même date le mois dernier (+${M(b.d)}).` }) }); }
   const cnt = {}; mExp.forEach(x => { if (!x.rec) { cnt[x.cat] = cnt[x.cat] || { n:0, s:0 }; cnt[x.cat].n++; cnt[x.cat].s += +x.amount; } });
   const small = Object.entries(cnt).filter(([, v]) => v.n >= 6 && v.s / v.n <= 60).sort((a, b) => b[1].n - a[1].n)[0];
-  if (small) { const [id, v] = small; out.push({ tone:'info', icon:'spark', html:`${v.n} مرات <b>${esc(cat(id).name)}</b> هاد الشهر = ${M(v.s)}. إلا نقصتي النص، توفر تقريبا ${M(v.s / dom * dim / 2)} فالشهر.` }); }
-  /* 6. budget pace */
-  const ep = dom / dim * 100;
+  if (small) { const [id, v] = small, sv = M(v.s / dom * dim / 2); out.push({ tone:'info', icon:'spark', html:L({
+    ar:`${v.n} مرات ${cn(id)} هاد الشهر = ${M(v.s)}. إلا نقصتي النص، توفر تقريبا ${sv} فالشهر.`,
+    en:`${v.n} times ${cn(id)} this month = ${M(v.s)}. Cut that in half and you'd save about ${sv} a month.`,
+    fr:`${v.n} fois ${cn(id)} ce mois-ci = ${M(v.s)}. En réduisant de moitié, tu économiserais environ ${sv} par mois.` }) }); }
+  const ep = dom / dim * 100, rest = dim - dom;
   Object.entries(S.budgets).map(([id, b]) => ({ id, b:+b, sp:by[id] || 0, q:(by[id] || 0) / b * 100 })).filter(x => x.b > 0 && x.q < 100 && x.q >= 50 && x.q >= ep + 25).sort((a, b) => b.q - a.q).slice(0, 2).forEach(({ id, b, sp, q }) => {
-    out.push({ tone:'warn', icon:'alert', html:`<b>${esc(cat(id).name)}</b>: مشا ${PC(q)} من الميزانية وباقي ${dim - dom} يوم فالشهر. باش ما تفوتهاش: ماشي كثر من ${M((b - sp) / (dim - dom + 1))} فالنهار.` }); });
-  /* 7. savings rate last month */
+    const pd = M((b - sp) / (rest + 1)); out.push({ tone:'warn', icon:'alert', html:L({
+      ar:`${cn(id)}: مشا ${PC(q)} من الميزانية وباقي ${rest} يوم فالشهر. باش ما تفوتهاش: ماشي كثر من ${pd} فالنهار.`,
+      en:`${cn(id)}: ${PC(q)} of the budget is gone with ${rest} days left. To stay within it: no more than ${pd} a day.`,
+      fr:`${cn(id)} : ${PC(q)} du budget utilisé, et il reste ${rest} jours. Pour ne pas le dépasser : pas plus de ${pd} par jour.` }) }); });
   const lInc = sumA(inc.filter(x => ym(x.date) === lm)), lExp = sumA(exp.filter(x => ym(x.date) === lm));
   if (lInc > 0) { const r = (lInc - lExp) / lInc * 100;
-    out.push(r >= 0 ? { tone:r >= 10 ? 'good' : 'info', icon:'target', html:`${MONTHS[+lm.slice(5) - 1]} وفرتي ${PC(r)} من المدخول (${M(lInc - lExp)}).${r < 10 ? ' حاول توصل 10% على الأقل.' : ''}` }
-      : { tone:'bad', icon:'alert', html:`${MONTHS[+lm.slice(5) - 1]} صرفتي كثر من المدخول بـ ${M(lExp - lInc)}.` }); }
-  /* 8. upcoming bills in 7 days */
+    out.push(r >= 0 ? { tone:r >= 10 ? 'good' : 'info', icon:'target', html:L({
+        ar:`${lmName} وفرتي ${PC(r)} من المدخول (${M(lInc - lExp)}).${r < 10 ? ' حاول توصل 10% على الأقل.' : ''}`,
+        en:`In ${lmName} you saved ${PC(r)} of your income (${M(lInc - lExp)}).${r < 10 ? ' Try to reach at least 10%.' : ''}`,
+        fr:`En ${lmName}, tu as épargné ${PC(r)} de tes revenus (${M(lInc - lExp)}).${r < 10 ? ' Essaie d\'atteindre au moins 10 %.' : ''}` }) }
+      : { tone:'bad', icon:'alert', html:L({ ar:`${lmName} صرفتي كثر من المدخول بـ ${M(lExp - lInc)}.`, en:`In ${lmName} you spent ${M(lExp - lInc)} more than you earned.`, fr:`En ${lmName}, tu as dépensé ${M(lExp - lInc)} de plus que tes revenus.` }) }); }
   const soon = upcomingRec(t, addDays(t, 8));
-  if (soon.length) out.push({ tone:'info', icon:'calendar', html:`جايين هاد 7 يام: ${soon.slice(0, 3).map(u => `${esc(u.r.note || cat(u.r.cat).name)} ${M(u.r.amount)} (${dayLabel(u.date)})`).join('، ')}.` });
-  /* 9. old créances */
-  S.creances.filter(c => !c.paid && c.date && diffDays(c.date, t) >= 30).slice(0, 2).forEach(c => out.push({ tone:'info', icon:'users', html:`<b>${esc(c.person)}</b> سالك ${M(c.amount)} هادي ${diffDays(c.date, t)} يوم. فكرو بلطف؟` }));
+  if (soon.length) { const li = soon.slice(0, 3).map(u => `${esc(u.r.note || cat(u.r.cat).name)} ${M(u.r.amount)} (${dayLabel(u.date)})`).join(L({ ar:'، ', en:', ', fr:', ' }));
+    out.push({ tone:'info', icon:'calendar', html:L({ ar:`جايين هاد 7 يام: ${li}.`, en:`Coming up in the next 7 days: ${li}.`, fr:`À venir dans les 7 prochains jours : ${li}.` }) }); }
+  S.creances.filter(c => !c.paid && c.date && diffDays(c.date, t) >= 30).slice(0, 2).forEach(c => { const n = diffDays(c.date, t), p = `<b>${esc(c.person)}</b>`;
+    out.push({ tone:'info', icon:'users', html:L({ ar:`${p} سالك ${M(c.amount)} هادي ${n} يوم. فكرو بلطف؟`, en:`${p} has owed you ${M(c.amount)} for ${n} days. A gentle reminder?`, fr:`${p} te doit ${M(c.amount)} depuis ${n} jours. Un petit rappel ?` }) }); });
   const order = { bad:0, warn:1, good:2, info:3 };
   out.sort((a, b) => order[a.tone] - order[b.tone]);
   return { thin:false, safe, list:out, pp };
 }
 const insRow = x => `<div class="ins ${x.tone}">${ic(x.icon)}<div>${x.html}</div></div>`;
 function safeBox(I) {
-  if (!I.safe) return `<div class="ins info">${ic('wallet')}<div>سجل الصالير ولا المدخول ديال هاد الفترة (من ${dayLabel(I.pp.start)}) باش نحسب ليك شحال تقدر تصرف فالنهار.</div></div>`;
+  if (!I.safe) return `<div class="ins info">${ic('wallet')}<div>${L({ ar:`سجل الصالير ولا المدخول ديال هاد الفترة (من ${dayLabel(I.pp.start)}) باش نحسب ليك شحال تقدر تصرف فالنهار.`, en:`Add your salary or income for this period (since ${dayLabel(I.pp.start)}) so I can work out your daily budget.`, fr:`Ajoute ton salaire ou tes revenus de la période (depuis le ${dayLabel(I.pp.start)}) pour calculer ce que tu peux dépenser par jour.` })}</div></div>`;
   const s = I.safe, neg = s.perDay < 0;
-  return `<div class="safe ${neg ? 'neg' : ''}"><small>تقدر تصرف فالنهار</small><b>${money(Math.max(0, s.perDay)).replace('data-count', 'data-key="safe" data-count')}</b>
-    <span>حتى للصالير ${dayLabel(s.next)} · باقي ${s.left} يوم</span>
-    <div class="safe-calc">${M(s.pInc)} دخل − ${M(s.pExp)} صرفتي${s.upSum ? ` − ${M(s.upSum)} فواتير جاية (${s.nUp})` : ''} = ${M(s.avail)}</div></div>`;
+  const calc = L({ ar:`${M(s.pInc)} دخل − ${M(s.pExp)} صرفتي${s.upSum ? ` − ${M(s.upSum)} فواتير جاية (${s.nUp})` : ''} = ${M(s.avail)}`,
+    en:`${M(s.pInc)} income − ${M(s.pExp)} spent${s.upSum ? ` − ${M(s.upSum)} upcoming bills (${s.nUp})` : ''} = ${M(s.avail)}`,
+    fr:`${M(s.pInc)} revenus − ${M(s.pExp)} dépensés${s.upSum ? ` − ${M(s.upSum)} factures à venir (${s.nUp})` : ''} = ${M(s.avail)}` });
+  return `<div class="safe ${neg ? 'neg' : ''}"><small>${L({ ar:'تقدر تصرف فالنهار', en:'You can spend per day', fr:'Tu peux dépenser par jour' })}</small><b>${money(Math.max(0, s.perDay)).replace('data-count', 'data-key="safe" data-count')}</b>
+    <span>${L({ ar:`حتى للصالير ${dayLabel(s.next)} · باقي ${s.left} يوم`, en:`until payday, ${dayLabel(s.next)} · ${s.left} days left`, fr:`jusqu'à la paie, ${dayLabel(s.next)} · encore ${s.left} jours` })}</span>
+    <div class="safe-calc">${calc}</div></div>`;
 }
+/*i18n-end*/
 function insightsCard() {
   const I = insights();
-  if (I.thin) return `<div class="card"><h2>${ic('spark')} مصاريفي كيقول ليك</h2>${empty('مازال الداتا قليلة', 'سجل شي 5 حركات (والصالير) ونبدا نعطيك ملاحظات حقيقية من الأرقام ديالك')}</div>`;
-  return `<div class="card" id="insCard"><h2>${ic('spark')} مصاريفي كيقول ليك ${I.list.length > 3 ? `<button class="btn sm" data-act="allInsights">كلشي (${I.list.length})</button>` : ''}</h2>${safeBox(I)}
-    <div class="ins-list">${I.list.slice(0, 3).map(insRow).join('') || '<div class="muted" style="font-size:13px">زيد حركات أكثر باش تبان ليك ملاحظات.</div>'}</div></div>`;
+  if (I.thin) return `<div class="card"><h2>${ic('spark')} ${tr("مصاريفي كيقول ليك")}</h2>${empty(tr("مازال الداتا قليلة"), tr("سجل شي 5 حركات (والصالير) ونبدا نعطيك ملاحظات حقيقية من الأرقام ديالك"))}</div>`;
+  return `<div class="card" id="insCard"><h2>${ic('spark')} ${tr("مصاريفي كيقول ليك")} ${I.list.length > 3 ? `<button class="btn sm" data-act="allInsights">${tr("كلشي (")}${I.list.length})</button>` : ''}</h2>${safeBox(I)}
+    <div class="ins-list">${I.list.slice(0, 3).map(insRow).join('') || ('<div class="muted" style="font-size:13px">' + tr("زيد حركات أكثر باش تبان ليك ملاحظات.") + '</div>')}</div></div>`;
 }
 function insightsSheet() {
   const I = insights();
-  openSheet(head(`${ic('spark')} الملاحظات ديالك`) + safeBox(I) + `<div class="ins-list stagger">${I.list.map(insRow).join('')}</div><div class="hint">كلشي محسوب من الحركات اللي سجلتي، بلا أرقام مخترعة.</div>`, sh => animate(sh));
+  openSheet(head(`${ic('spark')} ${tr("الملاحظات ديالك")}`) + safeBox(I) + `<div class="ins-list stagger">${I.list.map(insRow).join('')}</div><div class="hint">${tr("كلشي محسوب من الحركات اللي سجلتي، بلا أرقام مخترعة.")}</div>`, sh => animate(sh));
 }
+/*i18n-skip*/
 function backupBanner() {
   const s = S.settings, t = today();
   if (S.tx.length < 10 || (s.backupSnooze && s.backupSnooze > t)) return '';
   if (s.lastBackup && diffDays(s.lastBackup, t) < 14) return '';
-  return `<div class="card backup">${ic('shield')}<div style="flex:1"><b>${s.lastBackup ? `آخر نسخة احتياطية هادي ${diffDays(s.lastBackup, t)} يوم` : 'عمرك ما درتي نسخة احتياطية'}</b><div class="muted" style="font-size:12px">إلا تمسح التطبيق ولا المتصفح، الداتا كتمشي. صيفط النسخة لراسك فـWhatsApp ولا Drive.</div>
-    <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="backupNow">${ic('download')} دير نسخة دابا</button><button class="btn sm" data-act="snoozeBackup">من بعد</button></div></div></div>`;
+  const n = s.lastBackup ? diffDays(s.lastBackup, t) : 0;
+  const title = s.lastBackup ? L({ ar:`آخر نسخة احتياطية هادي ${n} يوم`, en:`Your last backup was ${n} days ago`, fr:`Ta dernière sauvegarde date de ${n} jours` }) : L({ ar:'عمرك ما درتي نسخة احتياطية', en:"You've never made a backup", fr:"Tu n'as jamais fait de sauvegarde" });
+  return `<div class="card backup">${ic('shield')}<div style="flex:1"><b>${title}</b><div class="muted" style="font-size:12px">${L({ ar:'إلا تمسح التطبيق ولا المتصفح، الداتا كتمشي. صيفط النسخة لراسك فـWhatsApp ولا Drive.', en:'If the app or browser data gets deleted, your data is gone. Send the backup to yourself on WhatsApp or Drive.', fr:"Si l'appli ou les données du navigateur sont effacées, tout est perdu. Envoie-toi la sauvegarde sur WhatsApp ou Drive." })}</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="backupNow">${ic('download')} ${L({ ar:'دير نسخة دابا', en:'Back up now', fr:'Sauvegarder' })}</button><button class="btn sm" data-act="snoozeBackup">${L({ ar:'من بعد', en:'Later', fr:'Plus tard' })}</button></div></div></div>`;
 }
+/*i18n-end*/
 
 /* ---------- savings goals ---------- */
 function goalsHtml() {
   const tot = S.goals.reduce((s, g) => s + +g.saved, 0), tar = S.goals.reduce((s, g) => s + +g.target, 0);
-  return `<div class="card hero stagger"><div class="lbl">Objectifs · الأهداف ديالك</div><div class="big">${money(tot)}</div><div class="lbl">من ${M(tar)}</div></div>
+  return `<div class="card hero stagger"><div class="lbl">${tr("Objectifs · الأهداف ديالك")}</div><div class="big">${money(tot)}</div><div class="lbl">${tr("من")} ${M(tar)}</div></div>
   <div class="stagger">${S.goals.length ? S.goals.map(g => { const p = g.target ? Math.min(100, g.saved / g.target * 100) : 0, rest = Math.max(0, g.target - g.saved);
     const ml = g.deadline ? Math.max(1, (+g.deadline.slice(0, 4) - +today().slice(0, 4)) * 12 + (+g.deadline.slice(5) - +today().slice(5, 7))) : 0;
-    return `<div class="card"><div class="row between"><div class="row">${catIc({ color:p >= 100 ? '#2fd387' : '#7c5cff', icon:'target' })}<div><b>${esc(g.name)}</b><div class="muted" style="font-size:12px">${g.deadline ? 'قبل ' + monthLabel(g.deadline) : 'بلا تاريخ'}</div></div></div>
-      <button class="icon-btn press" data-act="editGoal" data-id="${g.id}" aria-label="بدل">${ic('edit')}</button></div>
+    return `<div class="card"><div class="row between"><div class="row">${catIc({ color:p >= 100 ? '#2fd387' : '#7c5cff', icon:'target' })}<div><b>${esc(g.name)}</b><div class="muted" style="font-size:12px">${g.deadline ? (tr("قبل") + ' ') + monthLabel(g.deadline) : tr("بلا تاريخ")}</div></div></div>
+      <button class="icon-btn press" data-act="editGoal" data-id="${g.id}" aria-label="${tr("بدل")}">${ic('edit')}</button></div>
       <div class="bar" style="margin:12px 0 6px"><i data-w="${p}"></i></div>
-      <div class="kv"><span>جمعتي</span><b><span class="num">${fmt(g.saved)} / ${fmt(g.target)} · ${pct(p)}</span></b></div>
-      ${rest > 0 ? `<div class="kv"><span>باقي</span><b>${M(rest)}</b></div>${ml ? `<div class="kv"><span>خاصك تحط فالشهر</span><b>${M(rest / ml)}</b></div>` : ''}
-      <button class="btn primary block" style="margin-top:8px" data-act="fundGoal" data-id="${g.id}">${ic('plus')} زيد فلوس</button>` : '<div class="tag green" style="margin-top:8px">🎉 وصلتي للهدف</div>'}</div>`; }).join('')
-    : empty('حتى هدف مازال', 'عطلة، طوموبيل، احتياط… حط هدف وتبع شحال جمعتي', { act:'addGoal', label:'زيد هدف' })}</div>
-  ${S.goals.length ? `<button class="btn block" data-act="addGoal">${ic('plus')} زيد هدف</button>` : ''}`;
+      <div class="kv"><span>${tr("جمعتي")}</span><b><span class="num">${fmt(g.saved)} / ${fmt(g.target)} · ${pct(p)}</span></b></div>
+      ${rest > 0 ? `<div class="kv"><span>${tr("باقي")}</span><b>${M(rest)}</b></div>${ml ? `<div class="kv"><span>${tr("خاصك تحط فالشهر")}</span><b>${M(rest / ml)}</b></div>` : ''}
+      <button class="btn primary block" style="margin-top:8px" data-act="fundGoal" data-id="${g.id}">${ic('plus')} ${tr("زيد فلوس")}</button>` : ('<div class="tag green" style="margin-top:8px">🎉 ' + tr("وصلتي للهدف") + '</div>')}</div>`; }).join('')
+    : empty(tr("حتى هدف مازال"), tr("عطلة، طوموبيل، احتياط… حط هدف وتبع شحال جمعتي"), { act:'addGoal', label:tr("زيد هدف") })}</div>
+  ${S.goals.length ? `<button class="btn block" data-act="addGoal">${ic('plus')} ${tr("زيد هدف")}</button>` : ''}`;
 }
 function goalSheet(g) {
   const ed = !!g; g = g || { name:'', target:'', saved:'', deadline:'' };
-  openSheet(head(ed ? 'بدل الهدف' : 'هدف جديد', ed && 'delGoal', g.id) + `<form id="gf">${field('السمية', inp('name', g.name, 'text', 'required placeholder="مثلا: عطلة، احتياط، طوموبيل"'))}
-    <div class="grid2">${field('الهدف (DH)', inp('target', g.target, 'number'))}${field('عندك دابا (DH)', inp('saved', g.saved, 'number', 'placeholder="0"'))}</div>
-    ${field('قبل شمن شهر (اختياري)', inp('deadline', g.deadline, 'month'))}<button class="btn primary block" type="submit">${ic('check')} سجل</button></form>`, sh => {
+  openSheet(head(ed ? tr("بدل الهدف") : tr("هدف جديد"), ed && 'delGoal', g.id) + `<form id="gf">${field(tr("السمية"), inp('name', g.name, 'text', ('required placeholder="' + tr("مثلا: عطلة، احتياط، طوموبيل") + '"')))}
+    <div class="grid2">${field(tr("الهدف (DH)"), inp('target', g.target, 'number'))}${field(tr("عندك دابا (DH)"), inp('saved', g.saved, 'number', 'placeholder="0"'))}</div>
+    ${field(tr("قبل شمن شهر (اختياري)"), inp('deadline', g.deadline, 'month'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#gf', sh);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name); if (!(num(v.target) > 0)) return invalid(f.target);
       const rec = { id:ed ? g.id : uid(), name:v.name.trim(), target:num(v.target), saved:num(v.saved), deadline:v.deadline || '' };
@@ -876,16 +898,16 @@ function goalSheet(g) {
 }
 function fundSheet(id) {
   const g = S.goals.find(x => x.id === id);
-  openSheet(head('زيد للهدف · ' + esc(g.name)) + `<form id="ff"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
-    <label class="switch-row"><input type="checkbox" name="astx" checked><span class="sw"></span><span>سجلها حتى كمصروف «Épargne» باش تنقص من الباقي ديال الشهر</span></label>
-    <button class="btn primary block" type="submit">${ic('check')} زيد</button></form>`, sh => {
+  openSheet(head((tr("زيد للهدف") + ' · ') + esc(g.name)) + `<form id="ff"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
+    <label class="switch-row"><input type="checkbox" name="astx" checked><span class="sw"></span><span>${tr("سجلها حتى كمصروف «Épargne» باش تنقص من الباقي ديال الشهر")}</span></label>
+    <button class="btn primary block" type="submit">${ic('check')} ${tr("زيد")}</button></form>`, sh => {
     const f = $('#ff', sh); setTimeout(() => f.amount.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const a = num(f.amount.value); if (!(a > 0)) return invalid(f.amount);
       const was = g.saved < g.target; g.saved = Math.round((+g.saved + a) * 100) / 100;
-      if (f.astx.checked) { if (!S.cats.find(c => c.id === 'epargne')) S.cats.push({ id:'epargne', name:'Épargne', ar:'التوفير', icon:'target', color:'#00d4b4', kind:'exp' });
-        S.tx.push({ id:uid(), ts:Date.now(), type:'exp', cat:'epargne', amount:a, note:'هدف · ' + g.name, date:today() }); }
+      if (f.astx.checked) { if (!S.cats.find(c => c.id === 'epargne')) S.cats.push({ id:'epargne', name:'Épargne', icon:'target', color:'#00d4b4', kind:'exp' });
+        S.tx.push({ id:uid(), ts:Date.now(), type:'exp', cat:'epargne', amount:a, note:(tr("هدف") + ' · ') + g.name, date:today() }); }
       save(); closeSheet(); const reached = was && g.saved >= g.target; success(true); render();
-      toast(reached ? `🎉 وصلتي للهدف ${esc(g.name)}!` : `تزادو <span class="num">${fmt(a)}</span> لـ ${esc(g.name)}`, 'check', null, true); };
+      toast(reached ? `🎉 ${tr("وصلتي للهدف")} ${esc(g.name)}!` : `${tr("تزادو")} <span class="num">${fmt(a)}</span> ${tr("لـ")} ${esc(g.name)}`, 'check', null, true); };
   });
 }
 
@@ -912,23 +934,23 @@ function showLock(mode) {
   if ($('#lock')) return;
   let entry = '', first = null;
   const el = document.createElement('div'); el.id = 'lock'; el.className = 'lock';
-  const title = () => mode === 'unlock' ? 'دخل الرمز ديالك' : first == null ? 'اختار رمز ديال 4 أرقام' : 'عاود الرمز';
+  const title = () => mode === 'unlock' ? tr("دخل الرمز ديالك") : first == null ? tr("اختار رمز ديال 4 أرقام") : tr("عاود الرمز");
   el.innerHTML = `<div class="logo">م</div><h3 id="lockT">${title()}</h3><div class="dots" id="dots">${'<i></i>'.repeat(4)}</div>
-    <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button data-k="x" class="sm">${mode === 'unlock' ? 'نسيت؟' : 'لغي'}</button><button data-k="0">0</button><button data-k="b" aria-label="مسح">${ic('chevR')}</button></div>`;
+    <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button data-k="x" class="sm">${mode === 'unlock' ? tr("نسيت؟") : tr("لغي")}</button><button data-k="0">0</button><button data-k="b" aria-label="${tr("مسح")}">${ic('chevR')}</button></div>`;
   document.body.appendChild(el);
   const dots = () => $$('#dots i', el).forEach((d, i) => d.classList.toggle('on', i < entry.length));
   const fail = msg => { const d = $('#dots', el); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); vib([40, 40, 40]); entry = ''; setTimeout(dots, 250); if (msg) $('#lockT', el).textContent = msg; };
   const close = () => { el.classList.add('out'); document.removeEventListener('keydown', kd); setTimeout(() => { el.remove(); const q = unlockQ; unlockQ = []; q.forEach(f => f()); }, 300); };
   const full = async () => {
-    if (mode === 'unlock') { const p = pinData(); if (p && await hashPin(entry, p.salt) === p.hash) { vib(15); close(); } else fail('الرمز غالط، عاود'); return; }
+    if (mode === 'unlock') { const p = pinData(); if (p && await hashPin(entry, p.salt) === p.hash) { vib(15); close(); } else fail(tr("الرمز غالط، عاود")); return; }
     if (first == null) { first = entry; entry = ''; dots(); $('#lockT', el).textContent = title(); return; }
-    if (entry !== first) { first = null; fail('ما تشابهوش، عاود من اللول'); return; }
+    if (entry !== first) { first = null; fail(tr("ما تشابهوش، عاود من اللول")); return; }
     const salt = [...crypto.getRandomValues(new Uint8Array(12))].map(x => x.toString(16).padStart(2, '0')).join('');
-    localStorage.setItem(PINK, JSON.stringify({ salt, hash:await hashPin(entry, salt) })); close(); success(false); toast('تحط الرمز 🔒');
+    localStorage.setItem(PINK, JSON.stringify({ salt, hash:await hashPin(entry, salt) })); close(); success(false); toast((tr("تحط الرمز") + ' 🔒'));
   };
   const key = k => {
     if (k === 'x') { if (mode !== 'unlock') return close();
-      if (confirm('نسيتي الرمز؟ الطريقة الوحيدة هي تمسح كاع الداتا من هاد التيليفون (إلا عندك نسخة احتياطية تقدر ترجعها من بعد). نمسحو؟')) { localStorage.removeItem(KEY); localStorage.removeItem(PINK); location.reload(); } return; }
+      if (confirm(tr("نسيتي الرمز؟ الطريقة الوحيدة هي تمسح كاع الداتا من هاد التيليفون (إلا عندك نسخة احتياطية تقدر ترجعها من بعد). نمسحو؟"))) { localStorage.removeItem(KEY); localStorage.removeItem(PINK); location.reload(); } return; }
     if (k === 'b') { entry = entry.slice(0, -1); dots(); return; }
     if (entry.length >= 4) return; entry += k; vib(6); dots(); if (entry.length === 4) setTimeout(full, 120);
   };
@@ -936,6 +958,44 @@ function showLock(mode) {
   const kd = e => { if (/^[0-9]$/.test(e.key)) key(e.key); else if (e.key === 'Backspace') key('b'); };
   document.addEventListener('keydown', kd);
 }
+
+
+/*i18n-skip*/
+const LANG_NAMES = { ar:['العربية', 'AR'], en:['English', 'EN'], fr:['Français', 'FR'] };
+const langPick = () => `<div class="lang-pick">${LANGS.map(l => `<button type="button" class="${l === LANG ? 'on' : ''}" data-act="setLang" data-lang="${l}"><span>${LANG_NAMES[l][0]}</span><small>${LANG_NAMES[l][1]}</small></button>`).join('')}</div>`;
+function applyLangChrome() {
+  const d = document.documentElement; d.lang = LANG; d.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+  document.title = L({ ar:'مصاريفي · Msarifi', en:'Msarifi · Money tracker', fr:'Msarifi · Mes dépenses' });
+  $('.brand h1').textContent = LANG === 'ar' ? 'مصاريفي' : 'Msarifi';
+  const h = new Date().getHours();
+  $('#hello').textContent = L({ ar:(h < 12 ? 'صباح الخير 👋' : h < 18 ? 'مساء الخير 👋' : 'مساء النور 🌙') + ' فين كيمشي الصالير؟',
+    en:(h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 🌙') + ' Where does your salary go?',
+    fr:(h < 18 ? 'Bonjour 👋' : 'Bonsoir 🌙') + ' Où part ton salaire ?' });
+  const lb = $('#langBtn'); lb.textContent = LANG_NAMES[LANG][1]; lb.setAttribute('aria-label', L({ ar:'اللغة · Language', en:'Language', fr:'Langue' }));
+  $('#themeBtn').setAttribute('aria-label', L({ ar:'Thème', en:'Theme', fr:'Thème' }));
+  $('#settingsBtn').setAttribute('aria-label', L({ ar:'Paramètres', en:'Settings', fr:'Paramètres' }));
+  $('#fab').setAttribute('aria-label', L({ ar:'زيد مصروف', en:'Add expense', fr:'Ajouter une dépense' }));
+  const p = d.dataset.priv === '1'; $('#privBtn').setAttribute('aria-label', p ? L({ ar:'بين الأرقام', en:'Show amounts', fr:'Afficher les montants' }) : L({ ar:'خبي الأرقام', en:'Hide amounts', fr:'Masquer les montants' }));
+}
+function setLang(l, quiet) {
+  if (!LANGS.includes(l)) return;
+  LANG = l; try { localStorage.setItem('msarifi.lang', l); } catch (e) {}
+  setNF(); applyLangChrome(); U.counts = {};
+  const open = $('#sheet').classList.contains('show') && !!$('#paydaySel');
+  renderTabs(); render();
+  if (open) settingsSheet(); else if ($('#sheet').classList.contains('show')) closeSheet();
+  requestAnimationFrame(() => placeThumbs(document, true));
+  if (!quiet) { vib(8); toast(L({ ar:'اللغة: العربية', en:'Language: English', fr:'Langue : Français' }), 'check'); }
+}
+function langSheet() {
+  openSheet(`<h3>${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}<span class="row"><button class="icon-btn press" data-act="close" aria-label="×">${ic('x')}</button></span></h3>${langPick()}<div class="hint" style="margin-top:12px">${L({ ar:'تقدر تبدلها من بعد من Paramètres.', en:'You can change it anytime in Settings.', fr:'Modifiable à tout moment dans les Paramètres.' })}</div>`);
+}
+const langWelcome = () => {
+  let chosen = null; try { chosen = localStorage.getItem('msarifi.lang'); } catch (e) {}
+  if (chosen || S.tx.length) return '';
+  return `<div class="card welcome rise"><h2>🌍 ${L({ ar:'اختار اللغة ديالك', en:'Choose your language', fr:'Choisis ta langue' })}</h2>${langPick()}</div>`;
+};
+/*i18n-end*/
 
 /* ---------- boot ---------- */
 function boot() {
@@ -945,7 +1005,7 @@ function boot() {
   setPriv(document.documentElement.dataset.priv === '1');
   $('#privBtn').onclick = () => setPriv(document.documentElement.dataset.priv !== '1', true); $('#settingsBtn').innerHTML = ic('settings');
   setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-  const h = new Date().getHours(); $('#hello').textContent = h < 12 ? 'صباح الخير 👋 فين كيمشي الصالير؟' : h < 18 ? 'مساء الخير 👋 فين كيمشي الصالير؟' : 'مساء النور 🌙 فين كيمشي الصالير؟';
+  applyLangChrome(); $('#langBtn').onclick = () => { bounce($('#langBtn')); langSheet(); };
   document.addEventListener('pointerdown', ripple, { passive:true });
   document.addEventListener('click', e => {
     const tb = e.target.closest('[data-tab]'); if (tb) return go(tb.dataset.tab);
@@ -972,7 +1032,7 @@ function boot() {
   const q = new URLSearchParams(location.search);
   if (q.has('add')) { afterUnlock(() => txSheet(null, { amount:q.get('amount') || '', cat:q.get('cat') || '', note:q.get('note') || '', type:q.get('type') === 'inc' ? 'inc' : 'exp' })); history.replaceState(null, '', location.pathname); }
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-  window.__msarifi = { get state() { return S; } };
+  window.__msarifi = { get state() { return S; }, missing:MISSING, setLang };
 }
 boot();
 })();

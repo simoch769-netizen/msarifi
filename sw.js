@@ -1,5 +1,5 @@
-const CACHE = 'msarifi-v3';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json', './fonts/cairo-arabic.woff2', './fonts/cairo-latin.woff2', './fonts/cairo-latin-ext.woff2', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
+const CACHE = 'msarifi-v4';
+const ASSETS = ['./', './index.html', './styles.css', './i18n.js', './app.js', './manifest.json', './fonts/cairo-arabic.woff2', './fonts/cairo-latin.woff2', './fonts/cairo-latin-ext.woff2', './fonts/inter-latin.woff2', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

@@ -6,3 +6,6 @@
 - Budget ديال كل فئة مع التنبيهات
 - Crédits، Créances، Actifs، Location (Airbnb / كرا عادي)
 - Export / Import JSON
+
+## Languages · اللغات · Langues
+العربية (RTL) · English · Français — switch from the AR/EN/FR button in the header or in Settings. Defaults to the phone language. No sample/demo data is ever loaded.
