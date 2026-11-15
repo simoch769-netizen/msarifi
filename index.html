@@ -4,14 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>مصاريفي · Msarifi</title>
-<meta name="description" content="مصاريفي: تسيير الفلوس ديالك بالدارجة. Dépenses, budget, crédits, créances, actifs, location.">
+<meta name="description" content="مصاريفي: تطبيق لإدارة المصاريف الشخصية والميزانية · Expense & budget tracker · Suivi des dépenses et du budget.">
 <meta name="theme-color" content="#0b0f1a" id="themeColor">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="مصاريفي">
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preload" href="fonts/cairo-arabic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="styles.css">
@@ -20,9 +21,9 @@
 <body>
 <div id="app">
   <header class="top">
-    <div class="brand"><div class="logo">م</div><div><h1>مصاريفي</h1><small id="hello">فين كيمشي الصالير؟</small></div></div>
+    <div class="brand"><img class="logo" src="icons/logo.svg" alt=""><div><h1>مصاريفي</h1><small id="hello">أين يذهب راتبك؟</small></div></div>
     <div class="row">
-      <button class="icon-btn press" id="privBtn" aria-label="خبي الأرقام" aria-pressed="false"></button>
+      <button class="icon-btn press" id="privBtn" aria-label="إخفاء المبالغ" aria-pressed="false"></button>
       <button class="icon-btn press" id="settingsBtn" aria-label="Paramètres"></button>
     </div>
   </header>
@@ -34,7 +35,7 @@
     <section class="view" id="v-wealth"></section>
   </main>
 </div>
-<button class="fab" id="fab" aria-label="زيد مصروف"></button>
+<button class="fab" id="fab" aria-label="أضف مصروفًا"></button>
 <nav class="tabs" id="tabs"></nav>
 <div class="backdrop" id="backdrop"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="grab"></div><div id="sheetBody"></div></div>

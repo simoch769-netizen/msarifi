@@ -304,3 +304,4 @@ html[lang="en"] body,html[lang="fr"] body{font-family:Inter,Cairo,system-ui,sans
 .card.welcome h2{justify-content:center}
 .logo{font-family:Cairo,system-ui,sans-serif}
 .sheet .card h2{justify-content:flex-start}
+.logo{display:block;background:none;object-fit:contain;padding:0}

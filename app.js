@@ -15,21 +15,21 @@ let LANG = (() => { try { const l = localStorage.getItem('msarifi.lang'); if (LA
   const n = (navigator.languages || [navigator.language || '']).map(x => String(x).slice(0, 2).toLowerCase()).find(x => LANGS.includes(x)); return n || 'ar'; })();
 const L = o => o[LANG] ?? o.ar;
 const MISSING = new Set();
-const tr = k => { if (LANG === 'ar') return k; const v = (window.I18N || {})[k]; if (!v) { MISSING.add(k); return k; } return v[LANG === 'en' ? 0 : 1]; };
+const tr = k => { if (LANG === 'ar') { const a = (window.I18N_AR || {})[k]; if (a == null) MISSING.add(k); return a ?? k; } const v = (window.I18N || {})[k]; if (!v) { MISSING.add(k); return k; } return v[LANG === 'en' ? 0 : 1]; };
 const FR_EN = { 'Dépenses':'Expenses', 'Revenus':'Income', 'Biens en location':'Rental properties', 'Marge nette':'Net margin', 'Total':'Total', 'Mensualité':'Monthly payment', 'Code PIN':'PIN code', 'Budget':'Budget', 'Dépense':'Expense', 'Revenu':'Income', 'Charge':'Expense', 'Rénovation':'Renovation', 'Actifs':'Assets', 'Location':'Rentals', 'Objectifs':'Goals', 'Export':'Export', 'Import':'Import', 'Actifs − Crédits + Créances':'Assets − Loans + Owed to you', 'Thème':'Theme', 'Paramètres':'Settings' };
-const FR_AR = { 'Dépenses':'المصاريف', 'Revenus':'المداخيل', 'Biens en location':'أملاك للكرا', 'Marge nette':'الهامش الصافي', 'Total':'المجموع', 'Mensualité':'الأقساط فالشهر', 'Code PIN':'الرمز السري', 'Budget':'الميزانية', 'Dépense':'مصروف', 'Revenu':'دخل', 'Charge':'مصروف', 'Rénovation':'إصلاح', 'Actifs':'الممتلكات', 'Location':'الكرا', 'Objectifs':'الأهداف', 'Export':'صيفط نسخة', 'Import':'رجع نسخة', 'Actifs − Crédits + Créances':'الممتلكات − الكريديات + اللي سالك', 'Thème':'الشكل', 'Paramètres':'الإعدادات' };
+const FR_AR = { 'Dépenses':'المصاريف', 'Revenus':'الدخل', 'Biens en location':'عقارات للإيجار', 'Marge nette':'الهامش الصافي', 'Total':'المجموع', 'Mensualité':'القسط الشهري', 'Code PIN':'الرمز السري', 'Budget':'الميزانية', 'Dépense':'مصروف', 'Revenu':'دخل', 'Charge':'مصروف', 'Rénovation':'إصلاح', 'Actifs':'الأصول', 'Location':'الإيجار', 'Objectifs':'الأهداف', 'Export':'تصدير نسخة', 'Import':'استيراد نسخة', 'Actifs − Crédits + Créances':'الأصول − القروض + الديون لك', 'Thème':'المظهر', 'Paramètres':'الإعدادات' };
 const fr = k => LANG === 'en' ? (FR_EN[k] || k) : LANG === 'ar' ? (FR_AR[k] || k) : k;
-const MONTHS_L = { ar:['يناير','فبراير','مارس','أبريل','ماي','يونيو','يوليوز','غشت','شتنبر','أكتوبر','نونبر','دجنبر'],
+const MONTHS_L = { ar:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
   en:['January','February','March','April','May','June','July','August','September','October','November','December'],
   fr:['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'] };
 const DAYS_L = { ar:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'], en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], fr:['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'] };
 const MON = () => MONTHS_L[LANG], DAYN = () => DAYS_L[LANG];
 const monShort = i => LANG === 'ar' ? MON()[i] : MON()[i].slice(0, LANG === 'fr' && MON()[i].length > 4 ? 4 : 3).replace(/^./, c => c.toUpperCase());
-const CATN = { cafe:['قهوة','Coffee','Café'], courses:['التقضية','Groceries','Courses'], factures:['الفواتير','Bills','Factures'], sorties:['الخرجات','Going out','Sorties'],
-  transport:['التنقل','Transport','Transport'], sante:['الصحة','Health','Santé'], credit:['الكريديات','Loans','Crédits'], autre:['أخرى','Other','Autre'],
-  salaire:['الصالير','Salary','Salaire'], extra:['مدخول آخر','Extra income','Revenu extra'], epargne:['التوفير','Savings','Épargne'] };
-const TAB_L = { ar:{ home:'الرئيسية', tx:'الحركات', budget:'ميزانية', debts:'كريديات', wealth:'أملاك' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
-const ASSET_L = { ar:{ house:'الدار / Appartement', car:'الطوموبيل', gold:'الذهب', crypto:'Crypto', other:'حاجة أخرى' }, en:{ house:'Home / Apartment', car:'Car', gold:'Gold', crypto:'Crypto', other:'Other' }, fr:{ house:'Maison / Appartement', car:'Voiture', gold:'Or', crypto:'Crypto', other:'Autre' } };
+const CATN = { cafe:['قهوة','Coffee','Café'], courses:['البقالة','Groceries','Courses'], factures:['الفواتير','Bills','Factures'], sorties:['الترفيه','Going out','Sorties'],
+  transport:['التنقل','Transport','Transport'], sante:['الصحة','Health','Santé'], credit:['القروض','Loans','Crédits'], autre:['أخرى','Other','Autre'],
+  salaire:['الراتب','Salary','Salaire'], extra:['دخل إضافي','Extra income','Revenu extra'], epargne:['الادخار','Savings','Épargne'] };
+const TAB_L = { ar:{ home:'الرئيسية', tx:'العمليات', budget:'الميزانية', debts:'القروض', wealth:'الأصول' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
+const ASSET_L = { ar:{ house:'منزل / شقة', car:'سيارة', gold:'ذهب', crypto:'عملات رقمية', other:'أخرى' }, en:{ house:'Home / Apartment', car:'Car', gold:'Gold', crypto:'Crypto', other:'Other' }, fr:{ house:'Maison / Appartement', car:'Voiture', gold:'Or', crypto:'Crypto', other:'Autre' } };
 /*i18n-end*/
 let NF; const setNF = () => { NF = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-MA', { maximumFractionDigits:2 }); }; setNF();
 const fmt = n => NF.format(Math.round((+n || 0) * 100) / 100) + ' DH';
@@ -413,12 +413,12 @@ function renderWealth(v) {
   } else {
     body = `<div class="stagger">${S.rentals.length ? S.rentals.map(r => { const st = rentalStats(r);
       const ent = [...(r.entries || [])].sort((a, b) => b.date.localeCompare(a.date));
-      return `<div class="card"><div class="row between"><div class="row">${catIc({ color:r.kind === 'airbnb' ? '#ff5c9a' : '#4f8bff', icon:'building' })}<div><b>${esc(r.name)}</b><div><span class="tag">${r.kind === 'airbnb' ? tr("Airbnb · كرا بالليلة") : (LANG === 'ar' ? tr("كرا عادي") + ' · Location longue' : tr("كرا عادي"))}</span></div></div></div>
+      return `<div class="card"><div class="row between"><div class="row">${catIc({ color:r.kind === 'airbnb' ? '#ff5c9a' : '#4f8bff', icon:'building' })}<div><b>${esc(r.name)}</b><div><span class="tag">${r.kind === 'airbnb' ? tr("Airbnb · كرا بالليلة") : tr("كرا عادي")}</span></div></div></div>
         <button class="icon-btn press" data-act="editRental" data-id="${r.id}" aria-label="${tr("بدل")}">${ic('edit')}</button></div>
         <div class="grid2" style="margin-top:12px">
          <div class="stat"><small>${tr("Revenus · دخل")}</small><b class="pos">${money(st.inc)}</b></div><div class="stat"><small>${tr("Charges · مصاريف")}</small><b class="neg">${money(st.exp)}</b></div>
          <div class="stat"><small>${tr("Net · الصافي")}</small><b class="${st.net >= 0 ? 'pos' : 'neg'}">${money(st.net)}</b></div><div class="stat"><small>${fr('Marge nette')}</small><b class="num">${pct(st.margin)}</b></div>
-         <div class="stat"><small>${L({ ar:'Rendement / عام', en:'Yield / year', fr:'Rendement / an' })}</small><b class="num ${st.yieldPct >= 0 ? 'pos' : 'neg'}">${pct(st.yieldPct)}</b></div><div class="stat"><small>${tr("Rénovation · الإصلاح")}</small><b>${money(st.reno)}</b></div>
+         <div class="stat"><small>${L({ ar:'العائد السنوي', en:'Yield / year', fr:'Rendement / an' })}</small><b class="num ${st.yieldPct >= 0 ? 'pos' : 'neg'}">${pct(st.yieldPct)}</b></div><div class="stat"><small>${tr("Rénovation · الإصلاح")}</small><b>${money(st.reno)}</b></div>
         </div>
         <div class="kv" style="margin-top:8px"><span>${tr("الاستثمار (الثمن + الإصلاح)")}</span><b>${money(st.invest)}</b></div>
         <div class="kv"><span>${tr("رجعو ليك من الإصلاح")}</span><b class="num">${pct(st.reno ? Math.max(0, st.net) / st.reno * 100 : 0)}</b></div>
@@ -602,7 +602,7 @@ function rentalSheet(r) {
   });
 }
 function rentEntrySheet(id, type) {
-  const r = S.rentals.find(x => x.id === id), LB = { inc:[(LANG === 'ar' ? tr("دخل") + ' · Revenu' : tr("دخل")), tr("مثلا: 3 ليالي Airbnb")], exp:[(LANG === 'ar' ? tr("مصروف") + ' · Charge' : tr("مصروف")), tr("مثلا: الضو، التنقية، Syndic")], reno:[(LANG === 'ar' ? tr("إصلاح") + ' · Rénovation' : tr("إصلاح")), tr("مثلا: الصباغة، الكوزينة")] }[type];
+  const r = S.rentals.find(x => x.id === id), LB = { inc:[tr("دخل"), tr("مثلا: 3 ليالي Airbnb")], exp:[tr("مصروف"), tr("مثلا: الضو، التنقية، Syndic")], reno:[tr("إصلاح"), tr("مثلا: الصباغة، الكوزينة")] }[type];
   openSheet(head(LB[0] + ' · ' + esc(r.name)) + `<form id="ref"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
     ${field(tr("ملاحظة"), inp('note', '', 'text', `placeholder="${LB[1]}"`))}${field(tr("التاريخ"), inp('date', today(), 'date'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#ref', sh); setTimeout(() => f.amount.focus(), 350);
@@ -614,8 +614,8 @@ function rentEntrySheet(id, type) {
 function settingsSheet() {
   const pin = pinData(), lb = S.settings.lastBackup;
   openSheet(head(tr("Paramètres · الإعدادات")) + `
-    <div class="card"><h2>🌍 ${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}</h2>${langPick()}</div>
-    <div class="card"><h2>${ic('moon')} ${L({ ar:'الوضع', en:'Appearance', fr:'Apparence' })}</h2>${themePick()}</div>
+    <div class="card"><h2>🌍 ${L({ ar:'اللغة', en:'Language', fr:'Langue' })}</h2>${langPick()}</div>
+    <div class="card"><h2>${ic('moon')} ${L({ ar:'المظهر', en:'Appearance', fr:'Apparence' })}</h2>${themePick()}</div>
     <div class="card"><h2>${ic('calendar')} ${tr("نهار الصالير")}</h2><div class="muted" style="font-size:13px;margin-bottom:8px">${tr("باش نحسب شحال تقدر تصرف فالنهار حتى للصالير الجاي.")}</div>
       <select class="input" id="paydaySel">${Array.from({ length:31 }, (_, i) => `<option value="${i + 1}" ${+S.settings.payday === i + 1 ? 'selected' : ''}>${tr("نهار")} ${i + 1} ${tr("فالشهر")}</option>`).join('')}</select></div>
     <div class="card"><h2>${ic('repeat')} ${tr("Récurrents · اللي كيتعاود")}</h2>
@@ -630,7 +630,7 @@ function settingsSheet() {
       <div class="grid2" style="margin-top:10px"><button class="btn" data-act="export">${ic('download')} ${fr('Export')}</button><button class="btn" data-act="import">${ic('upload')} ${fr('Import')}</button></div></div>
     <div class="card"><h2>${ic('lock')} ${fr('Code PIN')}</h2><div class="muted" style="font-size:13px;margin-bottom:10px">${pin ? tr("التطبيق مسدود بالرمز. كيتسد بوحدو إلا خرجتي منو كثر من دقيقة.") : tr("حط رمز ديال 4 أرقام باش حتى واحد ما يشوف الفلوس ديالك إلا شد التيليفون.")} ${tr("الرمز كيسد الشاشة، ولكن ما كيشفرش الداتا.")}</div>
       ${pin ? `<div class="grid2"><button class="btn" data-act="setPin">${tr("بدل الرمز")}</button><button class="btn danger" data-act="removePin">${tr("حيد الرمز")}</button></div>` : `<button class="btn primary block" data-act="setPin">${ic('lock')} ${tr("حط رمز")}</button>`}</div>
-    <div class="card"><h2>${ic('phone')} ${L({ ar:'النقر على الظهر · Back Tap', en:'Back Tap (iPhone)', fr:'Toucher le dos (iPhone)' })}</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:'1. Raccourcis / الاختصارات → + → «فتح URL» →', en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
+    <div class="card"><h2>${ic('phone')} ${L({ ar:'النقر على الظهر (آيفون)', en:'Back Tap (iPhone)', fr:'Toucher le dos (iPhone)' })}</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:'1. الاختصارات → + → «فتح عنوان URL» →', en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. الإعدادات ← تسهيلات الاستخدام ← اللمس ← النقر على الظهر ← نقر مزدوج ← اختر الاختصار.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
     <button class="btn sm" style="margin-top:8px" data-act="copyLink">${tr("نسخ الرابط")}</button></div>
     <div class="card"><h2>${ic('trash')} ${tr("مسح كلشي")}</h2><button class="btn danger block" data-act="reset">${ic('trash')} ${tr("مسح كلشي")}</button></div>
     <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")} · <a href="privacy.html#${LANG}" target="_blank" rel="noopener" style="color:inherit">${L({ ar:'سياسة الخصوصية', en:'Privacy policy', fr:'Confidentialité' })}</a></div>`, sh => {
@@ -777,16 +777,16 @@ function insights() {
     if (pp.elapsed >= 4 && vx.length >= 3 && vs > 0) {
       const avg = vs / pp.elapsed;
       if (avail <= 0) out.push({ tone:'bad', icon:'alert', html:L({
-        ar:`صرفتي كثر من المدخول ديال هاد الفترة بـ ${M(-avail)} (حاسبين حتى الفواتير الجاية). باقي ${pp.left} يوم للصالير.`,
+        ar:`أنفقت أكثر من دخل هذه الفترة بمقدار ${M(-avail)} (مع احتساب الفواتير القادمة). بقي ${pp.left} يومًا على الراتب.`,
         en:`You've spent ${M(-avail)} more than this period's income (upcoming bills included). ${pp.left} days to payday.`,
         fr:`Tu as dépensé ${M(-avail)} de plus que les revenus de la période (factures à venir comprises). Encore ${pp.left} jours avant la paie.` }) });
       else { const dz = Math.floor(avail / avg), d = dayLabel(addDays(t, dz)), gap = pp.left - dz;
         if (dz < pp.left) out.push({ tone:'bad', icon:'down', html:L({
-          ar:`بهاد الريتم (${M(avg)} فالنهار) غادي يسالي الصالير <b>${d}</b>، يعني ${gap} يوم قبل الصالير الجاي.`,
+          ar:`بهذا المعدل (${M(avg)} يوميًا) سينفد راتبك يوم <b>${d}</b>، أي قبل ${gap} يومًا من الراتب القادم.`,
           en:`At this pace (${M(avg)} a day) your salary runs out on <b>${d}</b>, ${gap} days before next payday.`,
           fr:`À ce rythme (${M(avg)} par jour), ton salaire sera épuisé le <b>${d}</b>, ${gap} jours avant la prochaine paie.` }) });
         else out.push({ tone:'good', icon:'up', html:L({
-          ar:`بهاد الريتم (${M(avg)} فالنهار) غادي يبقى ليك تقريبا ${M(avail - avg * pp.left)} ملي يجي الصالير ${dayLabel(pp.next)}.`,
+          ar:`بهذا المعدل (${M(avg)} يوميًا) سيتبقى لك نحو ${M(avail - avg * pp.left)} عند حلول الراتب يوم ${dayLabel(pp.next)}.`,
           en:`At this pace (${M(avg)} a day) you'll have about ${M(avail - avg * pp.left)} left on payday, ${dayLabel(pp.next)}.`,
           fr:`À ce rythme (${M(avg)} par jour), il te restera environ ${M(avail - avg * pp.left)} le jour de paie, ${dayLabel(pp.next)}.` }) }); }
     }
@@ -794,60 +794,60 @@ function insights() {
   const mExp = exp.filter(x => ym(x.date) === m), mTot = sumA(mExp), by = {};
   mExp.forEach(x => by[x.cat] = (by[x.cat] || 0) + +x.amount);
   if (mExp.length >= 5 && mTot > 0) { const [id, v] = Object.entries(by).sort((a, b) => b[1] - a[1])[0], p = PC(v / mTot * 100);
-    out.push({ tone:'info', icon:'pie', html:L({ ar:`${cn(id)} كلات ليك ${p} من المصاريف هاد الشهر (${M(v)}).`, en:`${cn(id)} took ${p} of your spending this month (${M(v)}).`, fr:`${cn(id)} représente ${p} de tes dépenses ce mois-ci (${M(v)}).` }) }); }
+    out.push({ tone:'info', icon:'pie', html:L({ ar:`استهلكت ${cn(id)} ${p} من مصاريفك هذا الشهر (${M(v)}).`, en:`${cn(id)} took ${p} of your spending this month (${M(v)}).`, fr:`${cn(id)} représente ${p} de tes dépenses ce mois-ci (${M(v)}).` }) }); }
   const lmTo = exp.filter(x => ym(x.date) === lm && +x.date.slice(8) <= dom), lmSum = sumA(lmTo);
   if (lmSum > 0 && mExp.length >= 3) { const ch = (mTot - lmSum) / lmSum * 100, up = ch > 0, a = PC(Math.abs(ch));
     out.push(Math.abs(ch) < 5 ? { tone:'info', icon:'calendar', html:L({
-        ar:`حتى لـ ${dom} ${mName} صرفتي ${M(mTot)}، تقريبا بحال نفس الوقت فالشهر اللي فات (${M(lmSum)}).`,
+        ar:`حتى ${dom} ${mName} أنفقت ${M(mTot)}، أي تقريبًا مثل الفترة نفسها من الشهر السابق (${M(lmSum)}).`,
         en:`By ${mName} ${dom} you've spent ${M(mTot)}, about the same as this time last month (${M(lmSum)}).`,
         fr:`Au ${dom} ${mName}, tu as dépensé ${M(mTot)}, à peu près comme le mois dernier à la même date (${M(lmSum)}).` }) }
       : { tone:up ? 'warn' : 'good', icon:up ? 'up' : 'down', html:L({
-        ar:`حتى لـ ${dom} ${mName} صرفتي ${M(mTot)}، ${up ? 'كثر' : 'قل'} بـ ${a} من نفس الوقت فالشهر اللي فات (${M(lmSum)}).`,
+        ar:`حتى ${dom} ${mName} أنفقت ${M(mTot)}، ${up ? 'أكثر' : 'أقل'} بنسبة ${a} من الفترة نفسها من الشهر السابق (${M(lmSum)}).`,
         en:`By ${mName} ${dom} you've spent ${M(mTot)}, ${a} ${up ? 'more' : 'less'} than this time last month (${M(lmSum)}).`,
         fr:`Au ${dom} ${mName}, tu as dépensé ${M(mTot)}, soit ${a} de ${up ? 'plus' : 'moins'} que le mois dernier à la même date (${M(lmSum)}).` }) }); }
   if (lmTo.length) { const pby = {}; lmTo.forEach(x => pby[x.cat] = (pby[x.cat] || 0) + +x.amount);
     const b = Object.keys(by).map(id => ({ id, cur:by[id], prev:pby[id] || 0, d:by[id] - (pby[id] || 0) })).filter(x => x.d >= 100 && (!x.prev || x.d / x.prev >= .3)).sort((a, c) => c.d - a.d)[0];
     if (b) out.push({ tone:'warn', icon:'up', html:L({
-      ar:`أكبر زيادة: ${cn(b.id)} ${M(b.cur)} هاد الشهر مقابل ${M(b.prev)} فنفس الوقت ديال الشهر اللي فات (+${M(b.d)}).`,
+      ar:`أكبر زيادة: ${cn(b.id)} ${M(b.cur)} هذا الشهر مقابل ${M(b.prev)} في الفترة نفسها من الشهر السابق (+${M(b.d)}).`,
       en:`Biggest increase: ${cn(b.id)} ${M(b.cur)} this month vs ${M(b.prev)} at this point last month (+${M(b.d)}).`,
       fr:`Plus forte hausse : ${cn(b.id)} ${M(b.cur)} ce mois-ci contre ${M(b.prev)} à la même date le mois dernier (+${M(b.d)}).` }) }); }
   const cnt = {}; mExp.forEach(x => { if (!x.rec) { cnt[x.cat] = cnt[x.cat] || { n:0, s:0 }; cnt[x.cat].n++; cnt[x.cat].s += +x.amount; } });
   const small = Object.entries(cnt).filter(([, v]) => v.n >= 6 && v.s / v.n <= 60).sort((a, b) => b[1].n - a[1].n)[0];
   if (small) { const [id, v] = small, sv = M(v.s / dom * dim / 2); out.push({ tone:'info', icon:'spark', html:L({
-    ar:`${v.n} مرات ${cn(id)} هاد الشهر = ${M(v.s)}. إلا نقصتي النص، توفر تقريبا ${sv} فالشهر.`,
+    ar:`${cn(id)} ${v.n} مرات هذا الشهر = ${M(v.s)}. إن خفّضتها إلى النصف ستوفّر نحو ${sv} شهريًا.`,
     en:`${v.n} times ${cn(id)} this month = ${M(v.s)}. Cut that in half and you'd save about ${sv} a month.`,
     fr:`${v.n} fois ${cn(id)} ce mois-ci = ${M(v.s)}. En réduisant de moitié, tu économiserais environ ${sv} par mois.` }) }); }
   const ep = dom / dim * 100, rest = dim - dom;
   Object.entries(S.budgets).map(([id, b]) => ({ id, b:+b, sp:by[id] || 0, q:(by[id] || 0) / b * 100 })).filter(x => x.b > 0 && x.q < 100 && x.q >= 50 && x.q >= ep + 25).sort((a, b) => b.q - a.q).slice(0, 2).forEach(({ id, b, sp, q }) => {
     const pd = M((b - sp) / (rest + 1)); out.push({ tone:'warn', icon:'alert', html:L({
-      ar:`${cn(id)}: مشا ${PC(q)} من الميزانية وباقي ${rest} يوم فالشهر. باش ما تفوتهاش: ماشي كثر من ${pd} فالنهار.`,
+      ar:`${cn(id)}: استُهلك ${PC(q)} من الميزانية وبقي ${rest} يومًا في الشهر. لتجنّب التجاوز: لا تتجاوز ${pd} يوميًا.`,
       en:`${cn(id)}: ${PC(q)} of the budget is gone with ${rest} days left. To stay within it: no more than ${pd} a day.`,
       fr:`${cn(id)} : ${PC(q)} du budget utilisé, et il reste ${rest} jours. Pour ne pas le dépasser : pas plus de ${pd} par jour.` }) }); });
   const lInc = sumA(inc.filter(x => ym(x.date) === lm)), lExp = sumA(exp.filter(x => ym(x.date) === lm));
   if (lInc > 0) { const r = (lInc - lExp) / lInc * 100;
     out.push(r >= 0 ? { tone:r >= 10 ? 'good' : 'info', icon:'target', html:L({
-        ar:`${lmName} وفرتي ${PC(r)} من المدخول (${M(lInc - lExp)}).${r < 10 ? ' حاول توصل 10% على الأقل.' : ''}`,
+        ar:`في ${lmName} ادّخرت ${PC(r)} من دخلك (${M(lInc - lExp)}).${r < 10 ? ' حاول الوصول إلى 10% على الأقل.' : ''}`,
         en:`In ${lmName} you saved ${PC(r)} of your income (${M(lInc - lExp)}).${r < 10 ? ' Try to reach at least 10%.' : ''}`,
         fr:`En ${lmName}, tu as épargné ${PC(r)} de tes revenus (${M(lInc - lExp)}).${r < 10 ? ' Essaie d\'atteindre au moins 10 %.' : ''}` }) }
-      : { tone:'bad', icon:'alert', html:L({ ar:`${lmName} صرفتي كثر من المدخول بـ ${M(lExp - lInc)}.`, en:`In ${lmName} you spent ${M(lExp - lInc)} more than you earned.`, fr:`En ${lmName}, tu as dépensé ${M(lExp - lInc)} de plus que tes revenus.` }) }); }
+      : { tone:'bad', icon:'alert', html:L({ ar:`في ${lmName} أنفقت أكثر من دخلك بمقدار ${M(lExp - lInc)}.`, en:`In ${lmName} you spent ${M(lExp - lInc)} more than you earned.`, fr:`En ${lmName}, tu as dépensé ${M(lExp - lInc)} de plus que tes revenus.` }) }); }
   const soon = upcomingRec(t, addDays(t, 8));
   if (soon.length) { const li = soon.slice(0, 3).map(u => `${esc(u.r.note || cat(u.r.cat).name)} ${M(u.r.amount)} (${dayLabel(u.date)})`).join(L({ ar:'، ', en:', ', fr:', ' }));
-    out.push({ tone:'info', icon:'calendar', html:L({ ar:`جايين هاد 7 يام: ${li}.`, en:`Coming up in the next 7 days: ${li}.`, fr:`À venir dans les 7 prochains jours : ${li}.` }) }); }
+    out.push({ tone:'info', icon:'calendar', html:L({ ar:`مستحقات الأيام السبعة القادمة: ${li}.`, en:`Coming up in the next 7 days: ${li}.`, fr:`À venir dans les 7 prochains jours : ${li}.` }) }); }
   S.creances.filter(c => !c.paid && c.date && diffDays(c.date, t) >= 30).slice(0, 2).forEach(c => { const n = diffDays(c.date, t), p = `<b>${esc(c.person)}</b>`;
-    out.push({ tone:'info', icon:'users', html:L({ ar:`${p} سالك ${M(c.amount)} هادي ${n} يوم. فكرو بلطف؟`, en:`${p} has owed you ${M(c.amount)} for ${n} days. A gentle reminder?`, fr:`${p} te doit ${M(c.amount)} depuis ${n} jours. Un petit rappel ?` }) }); });
+    out.push({ tone:'info', icon:'users', html:L({ ar:`${p} مدين لك بـ ${M(c.amount)} منذ ${n} يومًا. ما رأيك بتذكير لطيف؟`, en:`${p} has owed you ${M(c.amount)} for ${n} days. A gentle reminder?`, fr:`${p} te doit ${M(c.amount)} depuis ${n} jours. Un petit rappel ?` }) }); });
   const order = { bad:0, warn:1, good:2, info:3 };
   out.sort((a, b) => order[a.tone] - order[b.tone]);
   return { thin:false, safe, list:out, pp };
 }
 const insRow = x => `<div class="ins ${x.tone}">${ic(x.icon)}<div>${x.html}</div></div>`;
 function safeBox(I) {
-  if (!I.safe) return `<div class="ins info">${ic('wallet')}<div>${L({ ar:`سجل الصالير ولا المدخول ديال هاد الفترة (من ${dayLabel(I.pp.start)}) باش نحسب ليك شحال تقدر تصرف فالنهار.`, en:`Add your salary or income for this period (since ${dayLabel(I.pp.start)}) so I can work out your daily budget.`, fr:`Ajoute ton salaire ou tes revenus de la période (depuis le ${dayLabel(I.pp.start)}) pour calculer ce que tu peux dépenser par jour.` })}</div></div>`;
+  if (!I.safe) return `<div class="ins info">${ic('wallet')}<div>${L({ ar:`سجّل راتبك أو دخل هذه الفترة (منذ ${dayLabel(I.pp.start)}) لأحسب لك ما يمكنك إنفاقه يوميًا.`, en:`Add your salary or income for this period (since ${dayLabel(I.pp.start)}) so I can work out your daily budget.`, fr:`Ajoute ton salaire ou tes revenus de la période (depuis le ${dayLabel(I.pp.start)}) pour calculer ce que tu peux dépenser par jour.` })}</div></div>`;
   const s = I.safe, neg = s.perDay < 0;
-  const calc = L({ ar:`${M(s.pInc)} دخل − ${M(s.pExp)} صرفتي${s.upSum ? ` − ${M(s.upSum)} فواتير جاية (${s.nUp})` : ''} = ${M(s.avail)}`,
+  const calc = L({ ar:`${M(s.pInc)} دخل − ${M(s.pExp)} مصاريف${s.upSum ? ` − ${M(s.upSum)} فواتير قادمة (${s.nUp})` : ''} = ${M(s.avail)}`,
     en:`${M(s.pInc)} income − ${M(s.pExp)} spent${s.upSum ? ` − ${M(s.upSum)} upcoming bills (${s.nUp})` : ''} = ${M(s.avail)}`,
     fr:`${M(s.pInc)} revenus − ${M(s.pExp)} dépensés${s.upSum ? ` − ${M(s.upSum)} factures à venir (${s.nUp})` : ''} = ${M(s.avail)}` });
-  return `<div class="safe ${neg ? 'neg' : ''}"><small>${L({ ar:'تقدر تصرف فالنهار', en:'You can spend per day', fr:'Tu peux dépenser par jour' })}</small><b>${money(Math.max(0, s.perDay)).replace('data-count', 'data-key="safe" data-count')}</b>
-    <span>${L({ ar:`حتى للصالير ${dayLabel(s.next)} · باقي ${s.left} يوم`, en:`until payday, ${dayLabel(s.next)} · ${s.left} days left`, fr:`jusqu'à la paie, ${dayLabel(s.next)} · encore ${s.left} jours` })}</span>
+  return `<div class="safe ${neg ? 'neg' : ''}"><small>${L({ ar:'المتاح لك يوميًا', en:'You can spend per day', fr:'Tu peux dépenser par jour' })}</small><b>${money(Math.max(0, s.perDay)).replace('data-count', 'data-key="safe" data-count')}</b>
+    <span>${L({ ar:`حتى الراتب ${dayLabel(s.next)} · بقي ${s.left} يومًا`, en:`until payday, ${dayLabel(s.next)} · ${s.left} days left`, fr:`jusqu'à la paie, ${dayLabel(s.next)} · encore ${s.left} jours` })}</span>
     <div class="safe-calc">${calc}</div></div>`;
 }
 /*i18n-end*/
@@ -867,9 +867,9 @@ function backupBanner() {
   if (S.tx.length < 10 || (s.backupSnooze && s.backupSnooze > t)) return '';
   if (s.lastBackup && diffDays(s.lastBackup, t) < 14) return '';
   const n = s.lastBackup ? diffDays(s.lastBackup, t) : 0;
-  const title = s.lastBackup ? L({ ar:`آخر نسخة احتياطية هادي ${n} يوم`, en:`Your last backup was ${n} days ago`, fr:`Ta dernière sauvegarde date de ${n} jours` }) : L({ ar:'عمرك ما درتي نسخة احتياطية', en:"You've never made a backup", fr:"Tu n'as jamais fait de sauvegarde" });
-  return `<div class="card backup">${ic('shield')}<div style="flex:1"><b>${title}</b><div class="muted" style="font-size:12px">${L({ ar:'إلا تمسح التطبيق ولا المتصفح، الداتا كتمشي. صيفط النسخة لراسك فـWhatsApp ولا Drive.', en:'If the app or browser data gets deleted, your data is gone. Send the backup to yourself on WhatsApp or Drive.', fr:"Si l'appli ou les données du navigateur sont effacées, tout est perdu. Envoie-toi la sauvegarde sur WhatsApp ou Drive." })}</div>
-    <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="backupNow">${ic('download')} ${L({ ar:'دير نسخة دابا', en:'Back up now', fr:'Sauvegarder' })}</button><button class="btn sm" data-act="snoozeBackup">${L({ ar:'من بعد', en:'Later', fr:'Plus tard' })}</button></div></div></div>`;
+  const title = s.lastBackup ? L({ ar:`آخر نسخة احتياطية منذ ${n} يومًا`, en:`Your last backup was ${n} days ago`, fr:`Ta dernière sauvegarde date de ${n} jours` }) : L({ ar:'لم تُنشئ أي نسخة احتياطية بعد', en:"You've never made a backup", fr:"Tu n'as jamais fait de sauvegarde" });
+  return `<div class="card backup">${ic('shield')}<div style="flex:1"><b>${title}</b><div class="muted" style="font-size:12px">${L({ ar:'إذا حُذف التطبيق أو بياناته، ستضيع بياناتك. أرسل النسخة لنفسك عبر WhatsApp أو Drive.', en:'If the app or browser data gets deleted, your data is gone. Send the backup to yourself on WhatsApp or Drive.', fr:"Si l'appli ou les données du navigateur sont effacées, tout est perdu. Envoie-toi la sauvegarde sur WhatsApp ou Drive." })}</div>
+    <div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="backupNow">${ic('download')} ${L({ ar:'أنشئ نسخة الآن', en:'Back up now', fr:'Sauvegarder' })}</button><button class="btn sm" data-act="snoozeBackup">${L({ ar:'لاحقًا', en:'Later', fr:'Plus tard' })}</button></div></div></div>`;
 }
 /*i18n-end*/
 
@@ -938,7 +938,7 @@ function showLock(mode) {
   let entry = '', first = null;
   const el = document.createElement('div'); el.id = 'lock'; el.className = 'lock';
   const title = () => mode === 'unlock' ? tr("دخل الرمز ديالك") : first == null ? tr("اختار رمز ديال 4 أرقام") : tr("عاود الرمز");
-  el.innerHTML = `<div class="logo">م</div><h3 id="lockT">${title()}</h3><div class="dots" id="dots">${'<i></i>'.repeat(4)}</div>
+  el.innerHTML = `<img class="logo" src="icons/logo.svg" alt=""><h3 id="lockT">${title()}</h3><div class="dots" id="dots">${'<i></i>'.repeat(4)}</div>
     <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button data-k="x" class="sm">${mode === 'unlock' ? tr("نسيت؟") : tr("لغي")}</button><button data-k="0">0</button><button data-k="b" aria-label="${tr("مسح")}">${ic('chevR')}</button></div>`;
   document.body.appendChild(el);
   const dots = () => $$('#dots i', el).forEach((d, i) => d.classList.toggle('on', i < entry.length));
@@ -971,12 +971,12 @@ function applyLangChrome() {
   document.title = L({ ar:'مصاريفي · Msarifi', en:'Msarifi · Money tracker', fr:'Msarifi · Mes dépenses' });
   $('.brand h1').textContent = LANG === 'ar' ? 'مصاريفي' : 'Msarifi';
   const h = new Date().getHours();
-  $('#hello').textContent = L({ ar:(h < 12 ? 'صباح الخير 👋' : h < 18 ? 'مساء الخير 👋' : 'مساء النور 🌙') + ' فين كيمشي الصالير؟',
+  $('#hello').textContent = L({ ar:(h < 12 ? 'صباح الخير 👋' : 'مساء الخير 🌙') + ' أين يذهب راتبك؟',
     en:(h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 🌙') + ' Where does your salary go?',
     fr:(h < 18 ? 'Bonjour 👋' : 'Bonsoir 🌙') + ' Où part ton salaire ?' });
   $('#settingsBtn').setAttribute('aria-label', L({ ar:'الإعدادات', en:'Settings', fr:'Paramètres' }));
-  $('#fab').setAttribute('aria-label', L({ ar:'زيد مصروف', en:'Add expense', fr:'Ajouter une dépense' }));
-  const p = d.dataset.priv === '1'; $('#privBtn').setAttribute('aria-label', p ? L({ ar:'بين الأرقام', en:'Show amounts', fr:'Afficher les montants' }) : L({ ar:'خبي الأرقام', en:'Hide amounts', fr:'Masquer les montants' }));
+  $('#fab').setAttribute('aria-label', L({ ar:'أضف مصروفًا', en:'Add expense', fr:'Ajouter une dépense' }));
+  const p = d.dataset.priv === '1'; $('#privBtn').setAttribute('aria-label', p ? L({ ar:'إظهار المبالغ', en:'Show amounts', fr:'Afficher les montants' }) : L({ ar:'إخفاء المبالغ', en:'Hide amounts', fr:'Masquer les montants' }));
 }
 function setLang(l, quiet) {
   if (!LANGS.includes(l)) return;
@@ -989,14 +989,14 @@ function setLang(l, quiet) {
   if (!quiet) { vib(8); toast(L({ ar:'اللغة: العربية', en:'Language: English', fr:'Langue : Français' }), 'check'); }
 }
 function langSheet() {
-  openSheet(`<h3>${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}<span class="row"><button class="icon-btn press" data-act="close" aria-label="×">${ic('x')}</button></span></h3>${langPick()}<div class="hint" style="margin-top:12px">${L({ ar:'تقدر تبدلها من بعد من Paramètres.', en:'You can change it anytime in Settings.', fr:'Modifiable à tout moment dans les Paramètres.' })}</div>`);
+  openSheet(`<h3>${L({ ar:'اللغة', en:'Language', fr:'Langue' })}<span class="row"><button class="icon-btn press" data-act="close" aria-label="×">${ic('x')}</button></span></h3>${langPick()}<div class="hint" style="margin-top:12px">${L({ ar:'يمكنك تغييرها لاحقًا من الإعدادات.', en:'You can change it anytime in Settings.', fr:'Modifiable à tout moment dans les Paramètres.' })}</div>`);
 }
 const themePick = () => { const cur = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   return `<div class="lang-pick" style="grid-template-columns:1fr 1fr">${[['dark', 'moon', L({ ar:'ليلي', en:'Dark', fr:'Sombre' })], ['light', 'sun', L({ ar:'نهاري', en:'Light', fr:'Clair' })]].map(([k, i, n]) => `<button type="button" class="${k === cur ? 'on' : ''}" data-act="setTheme" data-th="${k}">${ic(i)}<span>${n}</span></button>`).join('')}</div>`; };
 const langWelcome = () => {
   let chosen = null; try { chosen = localStorage.getItem('msarifi.lang'); } catch (e) {}
   if (chosen || S.tx.length) return '';
-  return `<div class="card welcome rise"><h2>🌍 ${L({ ar:'اختار اللغة ديالك', en:'Choose your language', fr:'Choisis ta langue' })}</h2>${langPick()}</div>`;
+  return `<div class="card welcome rise"><h2>🌍 ${L({ ar:'اختر لغتك', en:'Choose your language', fr:'Choisis ta langue' })}</h2>${langPick()}</div>`;
 };
 /*i18n-end*/
 
