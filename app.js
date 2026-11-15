@@ -632,7 +632,7 @@ function settingsSheet() {
     <div class="card"><h2>${ic('phone')} ${L({ ar:'النقر على الظهر · Back Tap', en:'Back Tap (iPhone)', fr:'Toucher le dos (iPhone)' })}</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:'1. Raccourcis / الاختصارات → + → «فتح URL» →', en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
     <button class="btn sm" style="margin-top:8px" data-act="copyLink">${tr("نسخ الرابط")}</button></div>
     <div class="card"><h2>${ic('trash')} ${tr("مسح كلشي")}</h2><button class="btn danger block" data-act="reset">${ic('trash')} ${tr("مسح كلشي")}</button></div>
-    <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")}</div>`, sh => {
+    <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")} · <a href="privacy.html#${LANG}" target="_blank" rel="noopener" style="color:inherit">${L({ ar:'سياسة الخصوصية', en:'Privacy policy', fr:'Confidentialité' })}</a></div>`, sh => {
     $('#paydaySel', sh).onchange = e => { S.settings.payday = +e.target.value; save(); vib(8); toast(tr("تسجل نهار الصالير")); render(); };
   });
 }
