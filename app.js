@@ -11,6 +11,7 @@ const today = () => new Date().toLocaleDateString('en-CA');
 const ym = d => d.slice(0, 7);
 /*i18n-skip*/
 const LANGS = ['ar', 'en', 'fr'];
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 let LANG = (() => { try { const l = localStorage.getItem('msarifi.lang'); if (LANGS.includes(l)) return l; } catch (e) {}
   const n = (navigator.languages || [navigator.language || '']).map(x => String(x).slice(0, 2).toLowerCase()).find(x => LANGS.includes(x)); return n || 'ar'; })();
 const L = o => o[LANG] ?? o.ar;
@@ -642,6 +643,12 @@ function settingsSheet() {
 async function exportData() {
   const json = JSON.stringify({ app:'msarifi', exported:new Date().toISOString(), data:S }, null, 2), name = `msarifi-backup-${today()}.json`;
   const done = () => { S.settings.lastBackup = today(); S.settings.backupSnooze = null; save(); render(); toast((tr("تصاوبات النسخة") + ' · ' + tr("خبيها مزيان"))); };
+  if (NATIVE) { // Android app: write the file, then open the share sheet (WhatsApp, Drive, Files…)
+    try { const FS = Capacitor.registerPlugin('Filesystem'), SH = Capacitor.registerPlugin('Share');
+      const w = await FS.writeFile({ path:name, data:json, directory:'CACHE', encoding:'utf8' });
+      try { await SH.share({ title:'Msarifi backup', files:[w.uri] }); } catch (e) { if (!/cancel/i.test(String(e && (e.message || e)))) throw e; return; }
+      return done(); } catch (e) {
+      try { await Capacitor.registerPlugin('Filesystem').writeFile({ path:name, data:json, directory:'DOCUMENTS', encoding:'utf8' }); toast('Documents/' + name, 'check'); return done(); } catch (_) { toast(String(e && e.message || e), 'alert'); return; } } }
   try { const file = new File([json], name, { type:'application/json' });
     if (navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'Msarifi backup' }); return done(); } } catch (e) { if (e && e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json], { type:'application/json' })); a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -1000,6 +1007,17 @@ const langWelcome = () => {
 };
 /*i18n-end*/
 
+/* ---------- native (Android app built with Capacitor) ---------- */
+function initNative() {
+  try { const App = Capacitor.registerPlugin('App');
+    App.addListener('backButton', () => {
+      if ($('#lock')) return App.minimizeApp ? App.minimizeApp() : App.exitApp();
+      if ($('#sheet').classList.contains('show')) return closeSheet();
+      if (U.tab !== 'home') return go('home');
+      App.exitApp(); });
+  } catch (e) {}
+}
+
 /* ---------- boot ---------- */
 function boot() {
   load(); runRecurring();
@@ -1033,7 +1051,8 @@ function boot() {
   const locked = !!pinData(); if (locked) showLock('unlock');
   const q = new URLSearchParams(location.search);
   if (q.has('add')) { afterUnlock(() => txSheet(null, { amount:q.get('amount') || '', cat:q.get('cat') || '', note:q.get('note') || '', type:q.get('type') === 'inc' ? 'inc' : 'exp' })); history.replaceState(null, '', location.pathname); }
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  if (NATIVE) initNative();
+  else if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     const hadCtl = !!navigator.serviceWorker.controller; let reloading = false;
     navigator.serviceWorker.register('./sw.js').then(reg => { document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); }); }).catch(() => {});
     // a new version took over: reload once so the fresh code shows (skip if the user is typing in a sheet)
