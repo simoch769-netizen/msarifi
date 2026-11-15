@@ -615,6 +615,7 @@ function settingsSheet() {
   const pin = pinData(), lb = S.settings.lastBackup;
   openSheet(head(tr("Paramètres · الإعدادات")) + `
     <div class="card"><h2>🌍 ${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}</h2>${langPick()}</div>
+    <div class="card"><h2>${ic('moon')} ${L({ ar:'الوضع', en:'Appearance', fr:'Apparence' })}</h2>${themePick()}</div>
     <div class="card"><h2>${ic('calendar')} ${tr("نهار الصالير")}</h2><div class="muted" style="font-size:13px;margin-bottom:8px">${tr("باش نحسب شحال تقدر تصرف فالنهار حتى للصالير الجاي.")}</div>
       <select class="input" id="paydaySel">${Array.from({ length:31 }, (_, i) => `<option value="${i + 1}" ${+S.settings.payday === i + 1 ? 'selected' : ''}>${tr("نهار")} ${i + 1} ${tr("فالشهر")}</option>`).join('')}</select></div>
     <div class="card"><h2>${ic('repeat')} ${tr("Récurrents · اللي كيتعاود")}</h2>
@@ -655,6 +656,7 @@ function importData(file) {
 }
 const ACT = {
   setLang:b => setLang(b.dataset.lang),
+  setTheme:b => { setTheme(b.dataset.th); vib(8); render(); $$('[data-act=setTheme]').forEach(x => x.classList.toggle('on', x === b)); },
   add:() => txSheet(), close:closeSheet, goTx:() => go('tx'),
   mPrev:() => { U.month = addMonth(U.month, -1); vib(6); render(); }, mNext:() => { U.month = addMonth(U.month, 1); vib(6); render(); },
   editTx:(el) => { if (el._swiped) return; txSheet(S.tx.find(t => t.id === el.dataset.id)); },
@@ -694,7 +696,7 @@ function setPriv(on, anim) {
 }
 function setTheme(t) {
   document.documentElement.dataset.theme = t; localStorage.setItem('msarifi.theme', t);
-  $('#themeBtn').innerHTML = ic(t === 'light' ? 'moon' : 'sun'); $('#themeColor').content = t === 'light' ? '#f3f5fb' : '#0b0f1a';
+  $('#themeColor').content = t === 'light' ? '#f3f5fb' : '#0b0f1a';
 }
 
 /* ---------- dates ---------- */
@@ -972,8 +974,6 @@ function applyLangChrome() {
   $('#hello').textContent = L({ ar:(h < 12 ? 'صباح الخير 👋' : h < 18 ? 'مساء الخير 👋' : 'مساء النور 🌙') + ' فين كيمشي الصالير؟',
     en:(h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 🌙') + ' Where does your salary go?',
     fr:(h < 18 ? 'Bonjour 👋' : 'Bonsoir 🌙') + ' Où part ton salaire ?' });
-  const lb = $('#langBtn'); lb.textContent = LANG_NAMES[LANG][1]; lb.setAttribute('aria-label', L({ ar:'اللغة · Language', en:'Language', fr:'Langue' }));
-  $('#themeBtn').setAttribute('aria-label', L({ ar:'الشكل', en:'Theme', fr:'Thème' }));
   $('#settingsBtn').setAttribute('aria-label', L({ ar:'الإعدادات', en:'Settings', fr:'Paramètres' }));
   $('#fab').setAttribute('aria-label', L({ ar:'زيد مصروف', en:'Add expense', fr:'Ajouter une dépense' }));
   const p = d.dataset.priv === '1'; $('#privBtn').setAttribute('aria-label', p ? L({ ar:'بين الأرقام', en:'Show amounts', fr:'Afficher les montants' }) : L({ ar:'خبي الأرقام', en:'Hide amounts', fr:'Masquer les montants' }));
@@ -991,6 +991,8 @@ function setLang(l, quiet) {
 function langSheet() {
   openSheet(`<h3>${L({ ar:'اللغة · Language', en:'Language', fr:'Langue' })}<span class="row"><button class="icon-btn press" data-act="close" aria-label="×">${ic('x')}</button></span></h3>${langPick()}<div class="hint" style="margin-top:12px">${L({ ar:'تقدر تبدلها من بعد من Paramètres.', en:'You can change it anytime in Settings.', fr:'Modifiable à tout moment dans les Paramètres.' })}</div>`);
 }
+const themePick = () => { const cur = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  return `<div class="lang-pick" style="grid-template-columns:1fr 1fr">${[['dark', 'moon', L({ ar:'ليلي', en:'Dark', fr:'Sombre' })], ['light', 'sun', L({ ar:'نهاري', en:'Light', fr:'Clair' })]].map(([k, i, n]) => `<button type="button" class="${k === cur ? 'on' : ''}" data-act="setTheme" data-th="${k}">${ic(i)}<span>${n}</span></button>`).join('')}</div>`; };
 const langWelcome = () => {
   let chosen = null; try { chosen = localStorage.getItem('msarifi.lang'); } catch (e) {}
   if (chosen || S.tx.length) return '';
@@ -1006,7 +1008,7 @@ function boot() {
   setPriv(document.documentElement.dataset.priv === '1');
   $('#privBtn').onclick = () => setPriv(document.documentElement.dataset.priv !== '1', true); $('#settingsBtn').innerHTML = ic('settings');
   setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
-  applyLangChrome(); $('#langBtn').onclick = () => { bounce($('#langBtn')); langSheet(); };
+  applyLangChrome();
   document.addEventListener('pointerdown', ripple, { passive:true });
   document.addEventListener('click', e => {
     const tb = e.target.closest('[data-tab]'); if (tb) return go(tb.dataset.tab);
@@ -1016,7 +1018,6 @@ function boot() {
   });
   $('#fab').onclick = () => { bounce($('#fab')); if ($('#sheet').classList.contains('show')) closeSheet(); else txSheet(); };
   $('#backdrop').onclick = closeSheet;
-  $('#themeBtn').onclick = () => { setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light'); bounce($('#themeBtn')); vib(8); render(); };
   $('#settingsBtn').onclick = settingsSheet;
   $('#importFile').onchange = e => { const f = e.target.files[0]; if (f) importData(f); e.target.value = ''; };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
