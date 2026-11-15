@@ -16,18 +16,19 @@ let LANG = (() => { try { const l = localStorage.getItem('msarifi.lang'); if (LA
 const L = o => o[LANG] ?? o.ar;
 const MISSING = new Set();
 const tr = k => { if (LANG === 'ar') return k; const v = (window.I18N || {})[k]; if (!v) { MISSING.add(k); return k; } return v[LANG === 'en' ? 0 : 1]; };
-const FR_EN = { 'Dépenses':'Expenses', 'Revenus':'Income', 'Biens en location':'Rental properties', 'Marge nette':'Net margin', 'Total':'Total', 'Mensualité':'Monthly payment', 'Code PIN':'PIN code', 'Budget':'Budget', 'Dépense':'Expense' };
-const fr = k => LANG === 'en' ? (FR_EN[k] || k) : k;
+const FR_EN = { 'Dépenses':'Expenses', 'Revenus':'Income', 'Biens en location':'Rental properties', 'Marge nette':'Net margin', 'Total':'Total', 'Mensualité':'Monthly payment', 'Code PIN':'PIN code', 'Budget':'Budget', 'Dépense':'Expense', 'Revenu':'Income', 'Charge':'Expense', 'Rénovation':'Renovation', 'Actifs':'Assets', 'Location':'Rentals', 'Objectifs':'Goals', 'Export':'Export', 'Import':'Import', 'Actifs − Crédits + Créances':'Assets − Loans + Owed to you', 'Thème':'Theme', 'Paramètres':'Settings' };
+const FR_AR = { 'Dépenses':'المصاريف', 'Revenus':'المداخيل', 'Biens en location':'أملاك للكرا', 'Marge nette':'الهامش الصافي', 'Total':'المجموع', 'Mensualité':'الأقساط فالشهر', 'Code PIN':'الرمز السري', 'Budget':'الميزانية', 'Dépense':'مصروف', 'Revenu':'دخل', 'Charge':'مصروف', 'Rénovation':'إصلاح', 'Actifs':'الممتلكات', 'Location':'الكرا', 'Objectifs':'الأهداف', 'Export':'صيفط نسخة', 'Import':'رجع نسخة', 'Actifs − Crédits + Créances':'الممتلكات − الكريديات + اللي سالك', 'Thème':'الشكل', 'Paramètres':'الإعدادات' };
+const fr = k => LANG === 'en' ? (FR_EN[k] || k) : LANG === 'ar' ? (FR_AR[k] || k) : k;
 const MONTHS_L = { ar:['يناير','فبراير','مارس','أبريل','ماي','يونيو','يوليوز','غشت','شتنبر','أكتوبر','نونبر','دجنبر'],
   en:['January','February','March','April','May','June','July','August','September','October','November','December'],
   fr:['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'] };
 const DAYS_L = { ar:['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'], en:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], fr:['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'] };
 const MON = () => MONTHS_L[LANG], DAYN = () => DAYS_L[LANG];
 const monShort = i => LANG === 'ar' ? MON()[i] : MON()[i].slice(0, LANG === 'fr' && MON()[i].length > 4 ? 4 : 3).replace(/^./, c => c.toUpperCase());
-const CATN = { cafe:['Café','Coffee','Café'], courses:['Courses','Groceries','Courses'], factures:['Factures','Bills','Factures'], sorties:['Sorties','Going out','Sorties'],
-  transport:['Transport','Transport','Transport'], sante:['Santé','Health','Santé'], credit:['Crédits','Loans','Crédits'], autre:['Autre','Other','Autre'],
-  salaire:['Salaire','Salary','Salaire'], extra:['Extra','Extra income','Revenu extra'], epargne:['Épargne','Savings','Épargne'] };
-const TAB_L = { ar:{ home:'الرئيسية', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
+const CATN = { cafe:['قهوة','Coffee','Café'], courses:['التقضية','Groceries','Courses'], factures:['الفواتير','Bills','Factures'], sorties:['الخرجات','Going out','Sorties'],
+  transport:['التنقل','Transport','Transport'], sante:['الصحة','Health','Santé'], credit:['الكريديات','Loans','Crédits'], autre:['أخرى','Other','Autre'],
+  salaire:['الصالير','Salary','Salaire'], extra:['مدخول آخر','Extra income','Revenu extra'], epargne:['التوفير','Savings','Épargne'] };
+const TAB_L = { ar:{ home:'الرئيسية', tx:'الحركات', budget:'ميزانية', debts:'كريديات', wealth:'أملاك' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
 const ASSET_L = { ar:{ house:'الدار / Appartement', car:'الطوموبيل', gold:'الذهب', crypto:'Crypto', other:'حاجة أخرى' }, en:{ house:'Home / Apartment', car:'Car', gold:'Gold', crypto:'Crypto', other:'Other' }, fr:{ house:'Maison / Appartement', car:'Voiture', gold:'Or', crypto:'Crypto', other:'Autre' } };
 /*i18n-end*/
 let NF; const setNF = () => { NF = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-MA', { maximumFractionDigits:2 }); }; setNF();
@@ -298,7 +299,7 @@ function renderHome(v) {
       <div class="stat"><small>${tr("Crédits · الكريديات")}</small><b class="neg">−${money(N.credits)}</b></div>
       <div class="stat"><small>${tr("Créances · سالك الناس")}</small><b>${money(N.creances)}</b></div>
       <div class="stat"><small>${fr('Biens en location')}</small><b>${S.rentals.length}</b></div>
-    </div><div class="hint">Actifs − Crédits + Créances</div></div>
+    </div><div class="hint">${fr('Actifs − Crédits + Créances')}</div></div>
   <div class="card"><h2>${tr("آخر 6 شهور")} <span class="row" style="gap:10px;font-size:11px;font-weight:600"><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--ok)"></i>${tr("دخل")}</span><span class="row" style="gap:4px"><i style="width:9px;height:9px;border-radius:3px;background:var(--danger)"></i>${tr("خرج")}</span></span></h2>
     <div class="cols">${months.map(x => `<div class="c"><div class="pair"><i data-h="${x.inc / mx * 100}" style="background:var(--ok)"></i><i data-h="${x.exp / mx * 100}" style="background:var(--danger)"></i></div><span>${monShort(+x.mm.slice(5) - 1)}</span></div>`).join('')}</div></div>
   <div class="sec-title">${tr("آخر الحركات")} <button class="btn sm" data-act="goTx">${tr("شوف كلشي")}</button></div>
@@ -310,7 +311,7 @@ function txMatches(t) {
   if (U.catF && t.cat !== U.catF) return false;
   const q = U.q.trim().toLowerCase(); if (!q) return true;
   const c = cat(t.cat), n = num(q);
-  return (t.note || '').toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || (c.ar || '').includes(q) || (n > 0 && Math.abs(+t.amount - n) < 0.01);
+  return (t.note || '').toLowerCase().includes(q) || [c.name, ...(CATN[c.id] || [])].some(x => String(x).toLowerCase().includes(q)) || (n > 0 && Math.abs(+t.amount - n) < 0.01);
 }
 function txListHtml() {
   const searching = !!U.q.trim();
@@ -375,7 +376,7 @@ function renderDebts(v) {
         <button class="icon-btn press" data-act="editCredit" data-id="${c.id}" aria-label="${tr("بدل")}">${ic('edit')}</button></div>
         <div class="bar" style="margin:12px 0 6px"><i data-w="${Math.max(0, Math.min(100, paid))}"></i></div>
         <div class="kv"><span>${tr("خلصتي")}</span><b class="num">${pct(paid)}</b></div>
-        <div class="kv"><span>Total</span><b>${money(c.total)}</b></div><div class="kv"><span>Mensualité</span><b>${money(c.monthly)}</b></div>
+        <div class="kv"><span>${fr('Total')}</span><b>${money(c.total)}</b></div><div class="kv"><span>${fr('Mensualité')}</span><b>${money(c.monthly)}</b></div>
         <div class="kv"><span>${tr("Reste · الباقي")}</span><b class="neg">${money(c.remaining)}</b></div><div class="kv"><span>${tr("شحال باقي من شهر")}</span><b class="num">${left}</b></div>
         ${+c.remaining > 0 ? `<button class="btn primary block" style="margin-top:8px" data-act="payCredit" data-id="${c.id}">${ic('check')} ${tr("خلصت هاد الشهر")}</button>` : ('<div class="tag green" style="margin-top:8px">🎉 ' + tr("تخلص كامل") + '</div>')}</div>`; }).join('')
       : empty(tr("ما عندك حتى كريدي"), tr("إلا عندك كريدي، زيدو هنا وتبع شحال باقي"), { act:'addCredit', label:tr("زيد كريدي") })}</div>
@@ -426,11 +427,11 @@ function renderWealth(v) {
         <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="exp">${ic('down')} ${tr("مصروف")}</button>
         <button class="btn sm" style="flex:1" data-act="rentEntry" data-id="${r.id}" data-type="reno">${ic('wrench')} ${tr("إصلاح")}</button></div>
         ${ent.length ? `<details style="margin-top:10px"><summary class="muted" style="cursor:pointer;font-size:13px">${tr("الحركات (")}${ent.length})</summary><div class="list" style="margin-top:8px">${ent.map(e => `<div class="item-wrap"><div class="del-bg">${ic('trash')}${ic('trash')}</div><div class="item" data-swipe="rent:${r.id}:${e.id}" style="padding:9px">
-          <div class="meta"><b>${esc(e.note || ({ inc:tr("دخل"), exp:tr("مصروف"), reno:tr("إصلاح") })[e.type])}</b><small>${({ inc:'Revenu', exp:'Charge', reno:'Rénovation' })[e.type]} · ${e.date}</small></div><div class="amt ${e.type === 'inc' ? 'pos' : 'neg'}"><span class="num">${e.type === 'inc' ? '+' : '−'}${fmt(e.amount)}</span></div></div></div>`).join('')}</div></details>` : ''}
+          <div class="meta"><b>${esc(e.note || ({ inc:tr("دخل"), exp:tr("مصروف"), reno:tr("إصلاح") })[e.type])}</b><small>${fr(({ inc:'Revenu', exp:'Charge', reno:'Rénovation' })[e.type])} · ${e.date}</small></div><div class="amt ${e.type === 'inc' ? 'pos' : 'neg'}"><span class="num">${e.type === 'inc' ? '+' : '−'}${fmt(e.amount)}</span></div></div></div>`).join('')}</div></details>` : ''}
       </div>`; }).join('') : empty(tr("ما عندك حتى ملك كتكريه"), tr("زيد شقة ديال Airbnb ولا كرا عادي وحسب الربح الصافي"), { act:'addRental', label:tr("زيد ملك") })}</div>
     ${S.rentals.length ? `<button class="btn block" data-act="addRental">${ic('plus')} ${tr("زيد ملك")}</button>` : ''}`;
   }
-  v.innerHTML = seg('wealthSeg', [['assets', 'Actifs'], ['rentals', 'Location'], ['goals', 'Objectifs']]) + body;
+  v.innerHTML = seg('wealthSeg', [['assets', fr('Actifs')], ['rentals', fr('Location')], ['goals', fr('Objectifs')]]) + body;
 }
 
 /* ---------- swipe to delete ---------- */
@@ -625,10 +626,10 @@ function settingsSheet() {
       <div class="kv"><span>${tr("آخر نسخة")}</span><b>${lb ? esc(lb) : tr("عمرك ما درتي")}</b></div>
       <div class="kv"><span>${tr("حماية من المسح التلقائي")}</span><b>${U.persist === true ? ('✓ ' + tr("مفعلة")) : U.persist === false ? tr("ما تقبلاتش") : '…'}</b></div>
       ${U.persist === false ? ('<div class="hint" style="text-align:start">' + tr("المتصفح ما عطاش الحماية. فالآيفون حط التطبيق فالشاشة الرئيسية، ودير نسخة من وقت لوقت.") + '</div>') : ''}
-      <div class="grid2" style="margin-top:10px"><button class="btn" data-act="export">${ic('download')} Export</button><button class="btn" data-act="import">${ic('upload')} Import</button></div></div>
+      <div class="grid2" style="margin-top:10px"><button class="btn" data-act="export">${ic('download')} ${fr('Export')}</button><button class="btn" data-act="import">${ic('upload')} ${fr('Import')}</button></div></div>
     <div class="card"><h2>${ic('lock')} ${fr('Code PIN')}</h2><div class="muted" style="font-size:13px;margin-bottom:10px">${pin ? tr("التطبيق مسدود بالرمز. كيتسد بوحدو إلا خرجتي منو كثر من دقيقة.") : tr("حط رمز ديال 4 أرقام باش حتى واحد ما يشوف الفلوس ديالك إلا شد التيليفون.")} ${tr("الرمز كيسد الشاشة، ولكن ما كيشفرش الداتا.")}</div>
       ${pin ? `<div class="grid2"><button class="btn" data-act="setPin">${tr("بدل الرمز")}</button><button class="btn danger" data-act="removePin">${tr("حيد الرمز")}</button></div>` : `<button class="btn primary block" data-act="setPin">${ic('lock')} ${tr("حط رمز")}</button>`}</div>
-    <div class="card"><h2>${ic('phone')} Back Tap (iPhone)</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:"1. Raccourcis → + → «Ouvrir l'URL» →", en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
+    <div class="card"><h2>${ic('phone')} ${L({ ar:'النقر على الظهر · Back Tap', en:'Back Tap (iPhone)', fr:'Toucher le dos (iPhone)' })}</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:'1. Raccourcis / الاختصارات → + → «فتح URL» →', en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → اختار الراكورسي.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
     <button class="btn sm" style="margin-top:8px" data-act="copyLink">${tr("نسخ الرابط")}</button></div>
     <div class="card"><h2>${ic('trash')} ${tr("مسح كلشي")}</h2><button class="btn danger block" data-act="reset">${ic('trash')} ${tr("مسح كلشي")}</button></div>
     <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")}</div>`, sh => {
@@ -726,7 +727,7 @@ function runRecurring() {
 function skipRec(t) { if (!t || !t.rec) return; const r = S.recurring.find(x => x.id === t.rec); if (r) { r.skip = r.skip || []; if (!r.skip.includes(ym(t.date))) r.skip.push(ym(t.date)); } }
 function recSheet(r) {
   if (!r) return;
-  openSheet(head(tr("حركة كتعاود"), 'delRec', r.id) + `<form id="recf"><div class="row" style="margin-bottom:12px">${catIc(cat(r.cat))}<div><b>${esc(r.note || cat(r.cat).name)}</b><div class="muted" style="font-size:12px">${r.type === 'inc' ? 'Revenu' : 'Dépense'} · ${esc(cat(r.cat).name)} · ${tr("من")} ${monthLabel(r.start)}</div></div></div>
+  openSheet(head(tr("حركة كتعاود"), 'delRec', r.id) + `<form id="recf"><div class="row" style="margin-bottom:12px">${catIc(cat(r.cat))}<div><b>${esc(r.note || cat(r.cat).name)}</b><div class="muted" style="font-size:12px">${fr(r.type === 'inc' ? 'Revenu' : 'Dépense')} · ${esc(cat(r.cat).name)} · ${tr("من")} ${monthLabel(r.start)}</div></div></div>
     <div class="grid2">${field(tr("المبلغ (DH)"), inp('amount', r.amount, 'number'))}${field(tr("النهار فالشهر"), inp('day', r.day, 'number', 'min="1" max="31"'))}</div>
     ${field(tr("حتى لشهر (اختياري)"), inp('end', r.end || '', 'month'))}
     <label class="switch-row"><input type="checkbox" name="active" ${r.active ? 'checked' : ''}><span class="sw"></span><span>${tr("خدامة")}</span></label>
@@ -972,8 +973,8 @@ function applyLangChrome() {
     en:(h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 🌙') + ' Where does your salary go?',
     fr:(h < 18 ? 'Bonjour 👋' : 'Bonsoir 🌙') + ' Où part ton salaire ?' });
   const lb = $('#langBtn'); lb.textContent = LANG_NAMES[LANG][1]; lb.setAttribute('aria-label', L({ ar:'اللغة · Language', en:'Language', fr:'Langue' }));
-  $('#themeBtn').setAttribute('aria-label', L({ ar:'Thème', en:'Theme', fr:'Thème' }));
-  $('#settingsBtn').setAttribute('aria-label', L({ ar:'Paramètres', en:'Settings', fr:'Paramètres' }));
+  $('#themeBtn').setAttribute('aria-label', L({ ar:'الشكل', en:'Theme', fr:'Thème' }));
+  $('#settingsBtn').setAttribute('aria-label', L({ ar:'الإعدادات', en:'Settings', fr:'Paramètres' }));
   $('#fab').setAttribute('aria-label', L({ ar:'زيد مصروف', en:'Add expense', fr:'Ajouter une dépense' }));
   const p = d.dataset.priv === '1'; $('#privBtn').setAttribute('aria-label', p ? L({ ar:'بين الأرقام', en:'Show amounts', fr:'Afficher les montants' }) : L({ ar:'خبي الأرقام', en:'Hide amounts', fr:'Masquer les montants' }));
 }
@@ -1031,7 +1032,12 @@ function boot() {
   const locked = !!pinData(); if (locked) showLock('unlock');
   const q = new URLSearchParams(location.search);
   if (q.has('add')) { afterUnlock(() => txSheet(null, { amount:q.get('amount') || '', cat:q.get('cat') || '', note:q.get('note') || '', type:q.get('type') === 'inc' ? 'inc' : 'exp' })); history.replaceState(null, '', location.pathname); }
-  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    const hadCtl = !!navigator.serviceWorker.controller; let reloading = false;
+    navigator.serviceWorker.register('./sw.js').then(reg => { document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); }); }).catch(() => {});
+    // a new version took over: reload once so the fresh code shows (skip if the user is typing in a sheet)
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!hadCtl || reloading) return; const apply = () => { if ($('#sheet').classList.contains('show')) return setTimeout(apply, 3000); reloading = true; location.reload(); }; apply(); });
+  }
   window.__msarifi = { get state() { return S; }, missing:MISSING, setLang };
 }
 boot();
