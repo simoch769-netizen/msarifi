@@ -1070,6 +1070,9 @@ function boot() {
   $('#privBtn').onclick = () => setPriv(document.documentElement.dataset.priv !== '1', true); $('#settingsBtn').innerHTML = ic('settings');
   setTheme(document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
   applyLangChrome();
+  const isEditable = el => !!(el && el.closest && el.closest('input,textarea,[contenteditable],[contenteditable="true"]'));
+  document.addEventListener('contextmenu', e => { if (!isEditable(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', e => { const t = e.target; if (t && (t.tagName === 'IMG' || t.closest && (t.closest('img') || t.closest('svg')))) e.preventDefault(); });
   document.addEventListener('pointerdown', ripple, { passive:true });
   document.addEventListener('click', e => {
     const tb = e.target.closest('[data-tab]'); if (tb) return go(tb.dataset.tab);
