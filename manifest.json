@@ -1,7 +1,7 @@
 {
-  "name": "مصاريفي · Msarifi",
-  "short_name": "مصاريفي",
-  "description": "إدارة المصاريف والميزانية · Track your money · Gère ton argent — Dépenses, Budget, Crédits, Actifs",
+  "name": "Msarifi",
+  "short_name": "Msarifi",
+  "description": "إدارة المصاريف والميزانية · Track your money · Gère ton argent",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -33,7 +33,7 @@
   "shortcuts": [
     {
       "name": "أضف مصروفًا · Add expense · Ajouter",
-      "short_name": "+ DH",
+      "short_name": "+",
       "url": "./index.html?add=1",
       "icons": [
         {

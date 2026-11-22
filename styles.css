@@ -305,3 +305,12 @@ html[lang="en"] body,html[lang="fr"] body{font-family:Inter,Cairo,system-ui,sans
 .logo{font-family:Cairo,system-ui,sans-serif}
 .sheet .card h2{justify-content:flex-start}
 .logo{display:block;background:none;object-fit:contain;padding:0}
+
+.cur-list{max-height:240px;overflow:auto;margin-top:8px;display:flex;flex-direction:column;gap:4px;-webkit-overflow-scrolling:touch}
+.cur-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--border);background:transparent;text-align:start;cursor:pointer;width:100%;color:inherit;font:inherit}
+.cur-item.on{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 16%,var(--card))}
+.cur-item:active{transform:scale(.98)}
+.cur-sym{min-width:42px;font-weight:800;text-align:center;direction:ltr;unicode-bidi:isolate}
+.cur-meta{display:flex;flex-direction:column;align-items:flex-start;gap:1px}
+.cur-meta b{font-family:Inter,system-ui,sans-serif;letter-spacing:.02em}
+.cur-meta small{color:var(--muted);font-size:12px;font-weight:600}

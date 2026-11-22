@@ -32,8 +32,47 @@ const CATN = { cafe:['قهوة','Coffee','Café'], courses:['البقالة','Gr
 const TAB_L = { ar:{ home:'الرئيسية', tx:'العمليات', budget:'الميزانية', debts:'القروض', wealth:'الأصول' }, en:{ home:'Home', tx:'Activity', budget:'Budget', debts:'Debts', wealth:'Assets' }, fr:{ home:'Accueil', tx:'Mouvements', budget:'Budget', debts:'Crédits', wealth:'Actifs' } };
 const ASSET_L = { ar:{ house:'منزل / شقة', car:'سيارة', gold:'ذهب', crypto:'عملات رقمية', other:'أخرى' }, en:{ house:'Home / Apartment', car:'Car', gold:'Gold', crypto:'Crypto', other:'Other' }, fr:{ house:'Maison / Appartement', car:'Voiture', gold:'Or', crypto:'Crypto', other:'Autre' } };
 /*i18n-end*/
-let NF; const setNF = () => { NF = new Intl.NumberFormat(LANG === 'en' ? 'en-US' : 'fr-MA', { maximumFractionDigits:2 }); }; setNF();
-const fmt = n => NF.format(Math.round((+n || 0) * 100) / 100) + ' DH';
+const CURRENCIES = 'AED AFN ALL AMD ANG AOA ARS AUD AWG AZN BAM BBD BDT BGN BHD BIF BMD BND BOB BRL BSD BTN BWP BYN BZD CAD CDF CHF CLP CNY COP CRC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP GBP GEL GHS GIP GMD GNF GTQ GYD HKD HNL HTG HUF IDR ILS INR IQD IRR ISK JMD JOD JPY KES KGS KHR KMF KPW KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD MMK MNT MOP MRU MUR MVR MWK MXN MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD SCR SDG SEK SGD SHP SLE SOS SRD SSP STN SYP SZL THB TJS TMT TND TOP TRY TTD TWD TZS UAH UGX USD UYU UZS VES VND VUV WST XAF XCD XCG XOF XPF YER ZAR ZMW ZWG'.split(' ');
+const CUR_PINNED = ['MAD','EUR','USD','GBP','SAR','AED','TND','DZD','EGP','CAD','CHF','TRY','QAR','KWD','BHD','OMR','JOD'];
+const REGION_CURRENCY = {AD:'EUR',AE:'AED',AF:'AFN',AG:'XCD',AI:'XCD',AL:'ALL',AM:'AMD',AO:'AOA',AR:'ARS',AS:'USD',AT:'EUR',AU:'AUD',AW:'AWG',AX:'EUR',AZ:'AZN',BA:'BAM',BB:'BBD',BD:'BDT',BE:'EUR',BF:'XOF',BG:'BGN',BH:'BHD',BI:'BIF',BJ:'XOF',BL:'EUR',BM:'BMD',BN:'BND',BO:'BOB',BQ:'USD',BR:'BRL',BS:'BSD',BT:'BTN',BW:'BWP',BY:'BYN',BZ:'BZD',CA:'CAD',CC:'AUD',CD:'CDF',CF:'XAF',CG:'XAF',CH:'CHF',CI:'XOF',CK:'NZD',CL:'CLP',CM:'XAF',CN:'CNY',CO:'COP',CR:'CRC',CU:'CUP',CV:'CVE',CW:'ANG',CX:'AUD',CY:'EUR',CZ:'CZK',DE:'EUR',DJ:'DJF',DK:'DKK',DM:'XCD',DO:'DOP',DZ:'DZD',EC:'USD',EE:'EUR',EG:'EGP',EH:'MAD',ER:'ERN',ES:'EUR',ET:'ETB',FI:'EUR',FJ:'FJD',FK:'FKP',FM:'USD',FO:'DKK',FR:'EUR',GA:'XAF',GB:'GBP',GD:'XCD',GE:'GEL',GF:'EUR',GG:'GBP',GH:'GHS',GI:'GIP',GL:'DKK',GM:'GMD',GN:'GNF',GP:'EUR',GQ:'XAF',GR:'EUR',GT:'GTQ',GU:'USD',GW:'XOF',GY:'GYD',HK:'HKD',HN:'HNL',HR:'EUR',HT:'HTG',HU:'HUF',ID:'IDR',IE:'EUR',IL:'ILS',IM:'GBP',IN:'INR',IO:'USD',IQ:'IQD',IR:'IRR',IS:'ISK',IT:'EUR',JE:'GBP',JM:'JMD',JO:'JOD',JP:'JPY',KE:'KES',KG:'KGS',KH:'KHR',KI:'AUD',KM:'KMF',KN:'XCD',KP:'KPW',KR:'KRW',KW:'KWD',KY:'KYD',KZ:'KZT',LA:'LAK',LB:'LBP',LC:'XCD',LI:'CHF',LK:'LKR',LR:'LRD',LS:'LSL',LT:'EUR',LU:'EUR',LV:'EUR',LY:'LYD',MA:'MAD',MC:'EUR',MD:'MDL',ME:'EUR',MF:'EUR',MG:'MGA',MH:'USD',MK:'MKD',ML:'XOF',MM:'MMK',MN:'MNT',MO:'MOP',MP:'USD',MQ:'EUR',MR:'MRU',MS:'XCD',MT:'EUR',MU:'MUR',MV:'MVR',MW:'MWK',MX:'MXN',MY:'MYR',MZ:'MZN',NA:'NAD',NC:'XPF',NE:'XOF',NF:'AUD',NG:'NGN',NI:'NIO',NL:'EUR',NO:'NOK',NP:'NPR',NR:'AUD',NU:'NZD',NZ:'NZD',OM:'OMR',PA:'PAB',PE:'PEN',PF:'XPF',PG:'PGK',PH:'PHP',PK:'PKR',PL:'PLN',PM:'EUR',PR:'USD',PS:'ILS',PT:'EUR',PW:'USD',PY:'PYG',QA:'QAR',RE:'EUR',RO:'RON',RS:'RSD',RU:'RUB',RW:'RWF',SA:'SAR',SB:'SBD',SC:'SCR',SD:'SDG',SE:'SEK',SG:'SGD',SH:'SHP',SI:'EUR',SJ:'NOK',SK:'EUR',SL:'SLE',SM:'EUR',SN:'XOF',SO:'SOS',SR:'SRD',SS:'SSP',ST:'STN',SV:'USD',SX:'ANG',SY:'SYP',SZ:'SZL',TC:'USD',TD:'XAF',TG:'XOF',TH:'THB',TJ:'TJS',TK:'NZD',TL:'USD',TM:'TMT',TN:'TND',TO:'TOP',TR:'TRY',TT:'TTD',TV:'AUD',TW:'TWD',TZ:'TZS',UA:'UAH',UG:'UGX',UM:'USD',US:'USD',UY:'UYU',UZ:'UZS',VA:'EUR',VC:'XCD',VE:'VES',VG:'USD',VI:'USD',VN:'VND',VU:'VUV',WF:'XPF',WS:'WST',XK:'EUR',YE:'YER',YT:'EUR',ZA:'ZAR',ZM:'ZMW',ZW:'ZWG'};
+const isCur = c => CURRENCIES.includes(c);
+const fmtLocale = () => LANG === 'ar' ? 'ar' : LANG === 'fr' ? 'fr' : 'en';
+const curCode = () => (S && S.settings && isCur(S.settings.currency) && S.settings.currency) || 'MAD';
+function curName(code) { try { return new Intl.DisplayNames([fmtLocale()], { type:'currency' }).of(code) || code; } catch (e) { return code; } }
+function curSym(code) { const c = code || curCode(); try { const p = new Intl.NumberFormat(fmtLocale(), { style:'currency', currency:c, currencyDisplay:'narrowSymbol' }).formatToParts(1); return (p.find(x => x.type === 'currency') || {}).value || c; } catch (e) { return c; } }
+function currencyFromDevice() {
+  for (const loc of [...(navigator.languages || []), navigator.language].filter(Boolean)) {
+    let region = '';
+    try { if (typeof Intl.Locale === 'function') region = (new Intl.Locale(loc).region || '').toUpperCase(); } catch (e) {}
+    if (!region) { const m = String(loc).match(/[-_]([A-Za-z]{2})\b/); if (m) region = m[1].toUpperCase(); }
+    if (region && isCur(REGION_CURRENCY[region])) return REGION_CURRENCY[region];
+  }
+  return 'MAD';
+}
+function listCurrencies(q) {
+  const query = String(q || '').trim().toLowerCase(), seen = new Set(), out = [];
+  const add = code => {
+    if (seen.has(code) || !isCur(code)) return;
+    const name = curName(code), sym = curSym(code);
+    if (query && !(code + ' ' + name + ' ' + sym).toLowerCase().includes(query)) return;
+    seen.add(code); out.push({ code, name, sym });
+  };
+  add(curCode()); CUR_PINNED.forEach(add); CURRENCIES.forEach(add); return out;
+}
+function currencyListHtml(q) {
+  const rows = listCurrencies(q);
+  return rows.length ? rows.map(c => `<button type="button" class="cur-item ${c.code === curCode() ? 'on' : ''}" data-act="setCurrency" data-code="${c.code}"><span class="cur-sym">${esc(c.sym)}</span><span class="cur-meta"><b>${c.code}</b><small>${esc(c.name)}</small></span></button>`).join('')
+    : ('<div class="muted" style="padding:12px">' + L({ ar:'لا توجد نتيجة', en:'No matches', fr:'Aucun résultat' }) + '</div>');
+}
+function currencyCard() {
+  return `<div class="card"><h2>${ic('coin')} ${L({ ar:'العملة', en:'Currency', fr:'Devise' })}</h2>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${L({ ar:'يُستخدم هذا الاختيار لعرض المبالغ فقط، دون تغيير الأرقام التي سجّلتها.', en:'This only changes how amounts are shown, not the numbers you already entered.', fr:"Cela change uniquement l'affichage des montants, pas les chiffres déjà saisis." })}</div>
+    <input class="input" id="curSearch" type="search" autocomplete="off" placeholder="${L({ ar:'ابحث عن عملة…', en:'Search for a currency…', fr:'Rechercher une devise…' })}">
+    <div class="cur-list" id="curList">${currencyListHtml('')}</div></div>`;
+}
+let NF; const setNF = () => { NF = new Intl.NumberFormat(fmtLocale(), { maximumFractionDigits:2 }); }; setNF();
+const fmt = n => { const v = Math.round((+n || 0) * 100) / 100; try { return new Intl.NumberFormat(fmtLocale(), { style:'currency', currency:curCode() }).format(v); } catch (e) { return NF.format(v) + ' ' + curCode(); } };
+const trCur = key => tr(key).replace(/\(DH\)/g, '(' + curCode() + ')').replace(/\(درهم\)/g, '(' + curCode() + ')');
 const money = (n, cls = '') => `<span class="num ${cls}" data-count="${+n || 0}">${fmt(n)}</span>`;
 const pct = n => NF.format(isFinite(n) ? Math.round(n * 10) / 10 : 0) + '%';
 const monthLabel = m => { const [y, mo] = m.split('-'); return `${MON()[+mo - 1]} ${y}`; };
@@ -48,6 +87,7 @@ const P = {
   pie:'<path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
   bank:'<path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>',
   gem:'<path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/>',
+  coin:'<circle cx="12" cy="12" r="9"/><path d="M14.3 9.3c-.6-1-1.6-1.5-2.6-1.5-1.6 0-2.7 1-2.7 2.3 0 2.5 5 1.3 5 3.7 0 1.3-1.1 2.1-2.7 2.1-1.1 0-2.2-.5-2.8-1.5M12 6.2V5m0 14v-1.2"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
@@ -111,11 +151,13 @@ const DEFAULT_CATS = [
 const blank = () => ({ v:2, tx:[], cats:DEFAULT_CATS.map(c => ({...c})), budgets:{}, credits:[], creances:[], assets:[], rentals:[], recurring:[], goals:[], settings:{ payday:1, lastBackup:null, backupSnooze:null } });
 let S;
 function load() {
-  try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch (e) { S = blank(); }
+  let existed = false;
+  try { const raw = localStorage.getItem(KEY); existed = raw != null; S = JSON.parse(raw) || blank(); } catch (e) { S = blank(); }
   const b = blank();
   for (const k of Object.keys(b)) if (S[k] == null) S[k] = b[k];
   for (const k of Object.keys(b.settings)) if (!(k in S.settings)) S.settings[k] = b.settings[k];
   for (const c of DEFAULT_CATS) if (!S.cats.find(x => x.id === c.id)) S.cats.push({...c});
+  if (!isCur(S.settings.currency)) { S.settings.currency = existed ? 'MAD' : currencyFromDevice(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast(tr("ما قدرتش نخبي الداتا"), 'alert'); } }
 const catName = c => c.custom || !CATN[c.id] ? c.name : CATN[c.id][LANGS.indexOf(LANG)];
@@ -499,7 +541,7 @@ function txSheet(t, pre = {}) {
   openSheet(head(ed ? tr("بدل الحركة") : tr("زيد حركة"), ed && 'delTx', t.id) + `<form id="txForm" autocomplete="off">
     <div class="type-toggle"><button type="button" class="exp ${type === 'exp' ? 'on' : ''}" data-type="exp">${ic('down')} ${tr("Dépense · خرج")}</button><button type="button" class="inc ${type === 'inc' ? 'on' : ''}" data-type="inc">${ic('up')} ${tr("Revenu · دخل")}</button></div>
     ${ed ? '' : `<div class="chips presets" id="presets">${presHtml()}</div>`}
-    <div class="amount-box"><input class="input amount-in" name="amount" type="text" inputmode="decimal" placeholder="0" value="${esc(t.amount)}" aria-label="${tr("المبلغ")}"><div class="cur">${tr("DH · درهم")}</div></div>
+    <div class="amount-box"><input class="input amount-in" name="amount" type="text" inputmode="decimal" placeholder="0" value="${esc(t.amount)}" aria-label="${tr("المبلغ")}"><div class="cur">${esc(curSym())}</div></div>
     <div class="cats" id="catGrid">${catsHtml()}</div>
     ${field(tr("Note · ملاحظة"), inp('note', t.note, 'text', ('placeholder="' + tr("مثلا: المرجان، قهوة مع صحابي…") + '" maxlength="80" list="noteList"')))}
     <datalist id="noteList">${[...new Set(S.tx.map(x => (x.note || '').trim()).filter(Boolean))].slice(-40).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
@@ -550,7 +592,7 @@ function catSheet(kind, done) {
 function budgetSheet(id) {
   const c = cat(id), T = monthTotals(U.month);
   openSheet(head(fr('Budget') + ' · ' + esc(c.name)) + `<form id="bf"><div class="row" style="margin-bottom:12px">${catIc(c)}<div><b>${esc(c.name)}</b><div class="muted" style="font-size:12px">${tr("صرفتي هاد الشهر:")} <span class="num">${fmt(T.by[id] || 0)}</span></div></div></div>
-    ${field(tr("الميزانية ديال الشهر (DH)"), inp('b', S.budgets[id] || '', 'number', ('placeholder="' + tr("مثلا 1500") + '"')))}
+    ${field(trCur("الميزانية ديال الشهر (DH)"), inp('b', S.budgets[id] || '', 'number', ('placeholder="' + tr("مثلا 1500") + '"')))}
     <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button>${S.budgets[id] ? `<button type="button" class="btn danger block" style="margin-top:8px" data-act="clearBudget" data-id="${id}">${tr("حيد الميزانية")}</button>` : ''}</form>`, sh => {
     const f = $('#bf', sh); setTimeout(() => f.b.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const b = num(f.b.value); if (!(b > 0)) return invalid(f.b); S.budgets[id] = b; save(); closeSheet(); success(false); render(); toast(tr("تسجلات الميزانية")); };
@@ -560,7 +602,7 @@ function budgetSheet(id) {
 function creditSheet(c) {
   const ed = !!c; c = c || { name:'', bank:'', total:'', monthly:'', remaining:'' };
   openSheet(head(ed ? tr("بدل الكريدي") : tr("كريدي جديد"), ed && 'delCredit', c.id) + `<form id="cf">${field(tr("السمية"), inp('name', c.name, 'text', ('required placeholder="' + tr("مثلا: كريدي الطوموبيل") + '"')))}${field(tr("البنك (اختياري)"), inp('bank', c.bank, 'text', 'placeholder="CIH, Attijari, Wafasalaf…"'))}
-    <div class="grid2">${field(fr('Total') + ' (DH)', inp('total', c.total, 'number'))}${field(fr('Mensualité') + ' (DH)', inp('monthly', c.monthly, 'number'))}</div>${field(tr("Reste · الباقي (DH)"), inp('remaining', c.remaining, 'number', ('placeholder="' + tr("إلا خليتيها خاوية") + ' = Total"')))}
+    <div class="grid2">${field(fr('Total') + ' (' + curCode() + ')', inp('total', c.total, 'number'))}${field(fr('Mensualité') + ' (' + curCode() + ')', inp('monthly', c.monthly, 'number'))}</div>${field(trCur("Reste · الباقي (DH)"), inp('remaining', c.remaining, 'number', ('placeholder="' + tr("إلا خليتيها خاوية") + ' = Total"')))}
     <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#cf', sh);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name); if (!(num(v.total) > 0)) return invalid(f.total);
@@ -570,7 +612,7 @@ function creditSheet(c) {
 }
 function creanceSheet(c) {
   const ed = !!c; c = c || { person:'', amount:'', note:'', date:today() };
-  openSheet(head(ed ? tr("بدل") : tr("شكون سالك؟"), ed && 'delCreance', c.id) + `<form id="crf">${field(tr("السمية"), inp('person', c.person, 'text', ('required placeholder="' + tr("مثلا: يوسف") + '"')))}${field(tr("شحال (DH)"), inp('amount', c.amount, 'number'))}
+  openSheet(head(ed ? tr("بدل") : tr("شكون سالك؟"), ed && 'delCreance', c.id) + `<form id="crf">${field(tr("السمية"), inp('person', c.person, 'text', ('required placeholder="' + tr("مثلا: يوسف") + '"')))}${field(trCur("شحال (DH)"), inp('amount', c.amount, 'number'))}
     ${field(tr("ملاحظة"), inp('note', c.note, 'text', ('placeholder="' + tr("علاش سلفتيه؟") + '"')))}${field(tr("التاريخ"), inp('date', c.date, 'date'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#crf', sh); if (!ed) setTimeout(() => f.person.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.person.trim()) return invalid(f.person); if (!(num(v.amount) > 0)) return invalid(f.amount);
@@ -581,7 +623,7 @@ function creanceSheet(c) {
 function assetSheet(a) {
   const ed = !!a; a = a || { type:'house', name:'', buy:'', current:'' };
   openSheet(head(ed ? tr("بدل") : tr("زيد حاجة كتملكها"), ed && 'delAsset', a.id) + `<form id="af"><div class="cats" style="grid-template-columns:repeat(5,1fr)">${Object.entries(ASSET_T).map(([k, t]) => `<button type="button" class="cat ${a.type === k ? 'on' : ''}" data-at="${k}">${catIc({ color:t[2], icon:t[1] })}<span>${t[0].split(' ')[0]}</span></button>`).join('')}</div>
-    ${field(tr("السمية"), inp('name', a.name, 'text', ('placeholder="' + tr("مثلا: Dacia Logan 2019") + '"')))}<div class="grid2">${field(tr("شريتها بـ (DH)"), inp('buy', a.buy, 'number'))}${field(tr("كتسوا دابا (DH)"), inp('current', a.current, 'number'))}</div>
+    ${field(tr("السمية"), inp('name', a.name, 'text', ('placeholder="' + tr("مثلا: Dacia Logan 2019") + '"')))}<div class="grid2">${field(trCur("شريتها بـ (DH)"), inp('buy', a.buy, 'number'))}${field(trCur("كتسوا دابا (DH)"), inp('current', a.current, 'number'))}</div>
     <button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#af', sh); let type = a.type;
     $$('[data-at]', sh).forEach(b => b.onclick = () => { type = b.dataset.at; $$('[data-at]', sh).forEach(x => x.classList.toggle('on', x === b)); vib(8); });
@@ -594,7 +636,7 @@ function rentalSheet(r) {
   const ed = !!r; r = r || { name:'', kind:'airbnb', price:'' };
   openSheet(head(ed ? tr("بدل الملك") : tr("ملك جديد للكرا"), ed && 'delRental', r.id) + `<form id="rf">${field(tr("السمية"), inp('name', r.name, 'text', ('required placeholder="' + tr("مثلا: شقة مرتيل") + '"')))}
     <div class="type-toggle"><button type="button" class="inc ${r.kind === 'airbnb' ? 'on' : ''}" data-k="airbnb">Airbnb</button><button type="button" class="inc ${r.kind === 'long' ? 'on' : ''}" data-k="long">${tr("كرا عادي")}</button></div>
-    ${field((tr("ثمن الشرا (DH)") + ' · ' + tr("باش نحسب الرونديمو")), inp('price', r.price, 'number', ('placeholder="0 ' + tr("إلا كتكري ملك ديال الغير") + '"')))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
+    ${field((trCur("ثمن الشرا (DH)") + ' · ' + tr("باش نحسب الرونديمو")), inp('price', r.price, 'number', ('placeholder="0 ' + tr("إلا كتكري ملك ديال الغير") + '"')))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#rf', sh); let kind = r.kind;
     $$('[data-k]', sh).forEach(b => b.onclick = () => { kind = b.dataset.k; $$('[data-k]', sh).forEach(x => x.classList.toggle('on', x === b)); vib(8); });
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name);
@@ -604,7 +646,7 @@ function rentalSheet(r) {
 }
 function rentEntrySheet(id, type) {
   const r = S.rentals.find(x => x.id === id), LB = { inc:[tr("دخل"), tr("مثلا: 3 ليالي Airbnb")], exp:[tr("مصروف"), tr("مثلا: الضو، التنقية، Syndic")], reno:[tr("إصلاح"), tr("مثلا: الصباغة، الكوزينة")] }[type];
-  openSheet(head(LB[0] + ' · ' + esc(r.name)) + `<form id="ref"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
+  openSheet(head(LB[0] + ' · ' + esc(r.name)) + `<form id="ref"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">${esc(curSym())}</div></div>
     ${field(tr("ملاحظة"), inp('note', '', 'text', `placeholder="${LB[1]}"`))}${field(tr("التاريخ"), inp('date', today(), 'date'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#ref', sh); setTimeout(() => f.amount.focus(), 350);
     f.onsubmit = e => { e.preventDefault(); const a = num(f.amount.value); if (!(a > 0)) return invalid(f.amount);
@@ -617,6 +659,7 @@ function settingsSheet() {
   openSheet(head(tr("Paramètres · الإعدادات")) + `
     <div class="card"><h2>🌍 ${L({ ar:'اللغة', en:'Language', fr:'Langue' })}</h2>${langPick()}</div>
     <div class="card"><h2>${ic('moon')} ${L({ ar:'المظهر', en:'Appearance', fr:'Apparence' })}</h2>${themePick()}</div>
+    ${currencyCard()}
     <div class="card"><h2>${ic('calendar')} ${tr("نهار الصالير")}</h2><div class="muted" style="font-size:13px;margin-bottom:8px">${tr("باش نحسب شحال تقدر تصرف فالنهار حتى للصالير الجاي.")}</div>
       <select class="input" id="paydaySel">${Array.from({ length:31 }, (_, i) => `<option value="${i + 1}" ${+S.settings.payday === i + 1 ? 'selected' : ''}>${tr("نهار")} ${i + 1} ${tr("فالشهر")}</option>`).join('')}</select></div>
     <div class="card"><h2>${ic('repeat')} ${tr("Récurrents · اللي كيتعاود")}</h2>
@@ -631,11 +674,11 @@ function settingsSheet() {
       <div class="grid2" style="margin-top:10px"><button class="btn" data-act="export">${ic('download')} ${fr('Export')}</button><button class="btn" data-act="import">${ic('upload')} ${fr('Import')}</button></div></div>
     <div class="card"><h2>${ic('lock')} ${fr('Code PIN')}</h2><div class="muted" style="font-size:13px;margin-bottom:10px">${pin ? tr("التطبيق مسدود بالرمز. كيتسد بوحدو إلا خرجتي منو كثر من دقيقة.") : tr("حط رمز ديال 4 أرقام باش حتى واحد ما يشوف الفلوس ديالك إلا شد التيليفون.")} ${tr("الرمز كيسد الشاشة، ولكن ما كيشفرش الداتا.")}</div>
       ${pin ? `<div class="grid2"><button class="btn" data-act="setPin">${tr("بدل الرمز")}</button><button class="btn danger" data-act="removePin">${tr("حيد الرمز")}</button></div>` : `<button class="btn primary block" data-act="setPin">${ic('lock')} ${tr("حط رمز")}</button>`}</div>
-    <div class="card"><h2>${ic('phone')} ${L({ ar:'النقر على الظهر (آيفون)', en:'Back Tap (iPhone)', fr:'Toucher le dos (iPhone)' })}</h2><div class="muted" style="font-size:13px;line-height:1.8">${L({ ar:'1. الاختصارات → + → «فتح عنوان URL» →', en:'1. Shortcuts → + → «Open URL» →', fr:"1. Raccourcis → + → «Ouvrir l'URL» →" })} <code style="direction:ltr;unicode-bidi:isolate">${esc(location.origin + location.pathname)}?add=1</code><br>${L({ ar:'2. الإعدادات ← تسهيلات الاستخدام ← اللمس ← النقر على الظهر ← نقر مزدوج ← اختر الاختصار.', en:'2. Settings → Accessibility → Touch → Back Tap → Double Tap → pick the shortcut.', fr:'2. Réglages → Accessibilité → Toucher → Toucher le dos → Toucher deux fois → choisis le raccourci.' })}</div>
-    <button class="btn sm" style="margin-top:8px" data-act="copyLink">${tr("نسخ الرابط")}</button></div>
     <div class="card"><h2>${ic('trash')} ${tr("مسح كلشي")}</h2><button class="btn danger block" data-act="reset">${ic('trash')} ${tr("مسح كلشي")}</button></div>
-    <div class="hint">${tr("مصاريفي v2")} · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")} · <a href="privacy.html#${LANG}" target="_blank" rel="noopener" style="color:inherit">${L({ ar:'سياسة الخصوصية', en:'Privacy policy', fr:'Confidentialité' })}</a></div>`, sh => {
+    <div class="hint">Msarifi · ${tr("بلا حساب، بلا سيرفر، بلا إشهار")} · ${tr("الداتا ديالك عندك")} · <a href="privacy.html#${LANG}" target="_blank" rel="noopener" style="color:inherit">${L({ ar:'سياسة الخصوصية', en:'Privacy policy', fr:'Confidentialité' })}</a></div>`, sh => {
     $('#paydaySel', sh).onchange = e => { S.settings.payday = +e.target.value; save(); vib(8); toast(tr("تسجل نهار الصالير")); render(); };
+    const search = $('#curSearch', sh), list = $('#curList', sh);
+    if (search && list) search.addEventListener('input', () => { list.innerHTML = currencyListHtml(search.value); });
   });
 }
 
@@ -664,6 +707,7 @@ function importData(file) {
 const ACT = {
   setLang:b => setLang(b.dataset.lang),
   setTheme:b => { setTheme(b.dataset.th); vib(8); render(); $$('[data-act=setTheme]').forEach(x => x.classList.toggle('on', x === b)); },
+  setCurrency:b => { const c = b.dataset.code; if (!isCur(c) || c === curCode()) return; S.settings.currency = c; save(); U.counts = {}; vib(8); toast(L({ ar:'تم حفظ العملة', en:'Currency saved', fr:'Devise enregistrée' }) + ' · ' + c, 'check'); render(); if ($('#sheet').classList.contains('show') && $('#paydaySel')) settingsSheet(); },
   add:() => txSheet(), close:closeSheet, goTx:() => go('tx'),
   mPrev:() => { U.month = addMonth(U.month, -1); vib(6); render(); }, mNext:() => { U.month = addMonth(U.month, 1); vib(6); render(); },
   editTx:(el) => { if (el._swiped) return; txSheet(S.tx.find(t => t.id === el.dataset.id)); },
@@ -692,7 +736,6 @@ const ACT = {
   snoozeBackup:() => { S.settings.backupSnooze = isoD(new Date(Date.now() + 7 * DAY)); save(); render(); },
   export:exportData, import:() => $('#importFile').click(),
   reset:() => { if (!confirm(tr("غادي تمسح كاع الداتا. متأكد؟"))) return; S = blank(); U.counts = {}; save(); closeSheet(); render(); toast(tr("تمسح كلشي"), 'trash'); },
-  copyLink:() => { const u = location.origin + location.pathname + '?add=1'; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => toast(tr("تنسخ الرابط")), () => prompt(tr("نسخ هاد الرابط:"), u)); }
 };
 
 function setPriv(on, anim) {
@@ -737,7 +780,7 @@ function skipRec(t) { if (!t || !t.rec) return; const r = S.recurring.find(x => 
 function recSheet(r) {
   if (!r) return;
   openSheet(head(tr("حركة كتعاود"), 'delRec', r.id) + `<form id="recf"><div class="row" style="margin-bottom:12px">${catIc(cat(r.cat))}<div><b>${esc(r.note || cat(r.cat).name)}</b><div class="muted" style="font-size:12px">${fr(r.type === 'inc' ? 'Revenu' : 'Dépense')} · ${esc(cat(r.cat).name)} · ${tr("من")} ${monthLabel(r.start)}</div></div></div>
-    <div class="grid2">${field(tr("المبلغ (DH)"), inp('amount', r.amount, 'number'))}${field(tr("النهار فالشهر"), inp('day', r.day, 'number', 'min="1" max="31"'))}</div>
+    <div class="grid2">${field(trCur("المبلغ (DH)"), inp('amount', r.amount, 'number'))}${field(tr("النهار فالشهر"), inp('day', r.day, 'number', 'min="1" max="31"'))}</div>
     ${field(tr("حتى لشهر (اختياري)"), inp('end', r.end || '', 'month'))}
     <label class="switch-row"><input type="checkbox" name="active" ${r.active ? 'checked' : ''}><span class="sw"></span><span>${tr("خدامة")}</span></label>
     <div class="hint" style="margin:0 0 10px">${tr("التبديل كيمس غير الشهور الجاية، الحركات اللي تزادو قبل كيبقاو كيف هوما.")}</div>
@@ -898,7 +941,7 @@ function goalsHtml() {
 function goalSheet(g) {
   const ed = !!g; g = g || { name:'', target:'', saved:'', deadline:'' };
   openSheet(head(ed ? tr("بدل الهدف") : tr("هدف جديد"), ed && 'delGoal', g.id) + `<form id="gf">${field(tr("السمية"), inp('name', g.name, 'text', ('required placeholder="' + tr("مثلا: عطلة، احتياط، طوموبيل") + '"')))}
-    <div class="grid2">${field(tr("الهدف (DH)"), inp('target', g.target, 'number'))}${field(tr("عندك دابا (DH)"), inp('saved', g.saved, 'number', 'placeholder="0"'))}</div>
+    <div class="grid2">${field(trCur("الهدف (DH)"), inp('target', g.target, 'number'))}${field(trCur("عندك دابا (DH)"), inp('saved', g.saved, 'number', 'placeholder="0"'))}</div>
     ${field(tr("قبل شمن شهر (اختياري)"), inp('deadline', g.deadline, 'month'))}<button class="btn primary block" type="submit">${ic('check')} ${tr("سجل")}</button></form>`, sh => {
     const f = $('#gf', sh);
     f.onsubmit = e => { e.preventDefault(); const v = formVals(f); if (!v.name.trim()) return invalid(f.name); if (!(num(v.target) > 0)) return invalid(f.target);
@@ -908,7 +951,7 @@ function goalSheet(g) {
 }
 function fundSheet(id) {
   const g = S.goals.find(x => x.id === id);
-  openSheet(head((tr("زيد للهدف") + ' · ') + esc(g.name)) + `<form id="ff"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">DH</div></div>
+  openSheet(head((tr("زيد للهدف") + ' · ') + esc(g.name)) + `<form id="ff"><div class="amount-box"><input class="input amount-in" name="amount" inputmode="decimal" placeholder="0"><div class="cur">${esc(curSym())}</div></div>
     <label class="switch-row"><input type="checkbox" name="astx" checked><span class="sw"></span><span>${tr("سجلها حتى كمصروف «Épargne» باش تنقص من الباقي ديال الشهر")}</span></label>
     <button class="btn primary block" type="submit">${ic('check')} ${tr("زيد")}</button></form>`, sh => {
     const f = $('#ff', sh); setTimeout(() => f.amount.focus(), 350);
@@ -975,8 +1018,8 @@ const LANG_NAMES = { ar:['العربية', 'AR'], en:['English', 'EN'], fr:['Fra
 const langPick = () => `<div class="lang-pick">${LANGS.map(l => `<button type="button" class="${l === LANG ? 'on' : ''}" data-act="setLang" data-lang="${l}"><span>${LANG_NAMES[l][0]}</span><small>${LANG_NAMES[l][1]}</small></button>`).join('')}</div>`;
 function applyLangChrome() {
   const d = document.documentElement; d.lang = LANG; d.dir = LANG === 'ar' ? 'rtl' : 'ltr';
-  document.title = L({ ar:'مصاريفي · Msarifi', en:'Msarifi · Money tracker', fr:'Msarifi · Mes dépenses' });
-  $('.brand h1').textContent = LANG === 'ar' ? 'مصاريفي' : 'Msarifi';
+  document.title = 'Msarifi';
+  $('.brand h1').textContent = 'Msarifi';
   const h = new Date().getHours();
   $('#hello').textContent = L({ ar:(h < 12 ? 'صباح الخير 👋' : 'مساء الخير 🌙') + ' أين يذهب راتبك؟',
     en:(h < 12 ? 'Good morning 👋' : h < 18 ? 'Good afternoon 👋' : 'Good evening 🌙') + ' Where does your salary go?',
